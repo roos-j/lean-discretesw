@@ -1,0 +1,2860 @@
+\documentclass[11pt,oneside]{article}
+\usepackage[a4paper,margin=27mm,headheight=15pt]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype,amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{enumitem,longtable,booktabs,array,xcolor,fancyhdr,xurl,hyperref,bookmark}
+\hypersetup{colorlinks=true,linkcolor=blue!45!black,urlcolor=blue!45!black,citecolor=blue!45!black,pdftitle={Discrete Stein--Wainger maximal operator: a forward formalization blueprint},pdfauthor={OpenAI}}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\setlist{nosep,leftmargin=2em}
+\pagestyle{fancy}\fancyhf{}\fancyhead[L]{\small Discrete Stein--Wainger maximal operator}\fancyhead[R]{\small $1<p<\infty$}\fancyfoot[C]{\thepage}
+\renewcommand{\sectionmark}[1]{\markboth{\thesection.\ #1}{}}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}\newtheorem{definition}[theorem]{Definition}
+\newtheorem{construction}[theorem]{Construction}
+\theoremstyle{remark}\newtheorem{remark}[theorem]{Remark}
+\newcommand{\R}{\mathbb R}\newcommand{\Z}{\mathbb Z}\newcommand{\N}{\mathbb N}\newcommand{\Q}{\mathbb Q}\newcommand{\C}{\mathbb C}\newcommand{\T}{\mathbb T}
+\newcommand{\ee}[1]{\mathrm e\!\left(#1\right)}
+\newcommand{\norm}[1]{\left\lVert #1\right\rVert}\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\ip}[2]{\left\langle #1,#2\right\rangle}
+\newcommand{\ind}{\mathbf 1}\newcommand{\supp}{\operatorname{supp}}\newcommand{\dist}{\operatorname{dist}}
+\newcommand{\lcm}{\operatorname{lcm}}\newcommand{\vol}{\operatorname{vol}}
+\newcommand{\av}{\mathop{\mathrm{avg}}}\newcommand{\E}{\mathbb E}\newcommand{\Prb}{\mathbb P}
+\newcommand{\CZ}{\mathsf{CZ}}\newcommand{\CSW}{\mathcal C}
+\newcommand{\Lift}{\mathcal L}\newcommand{\Aop}{\mathcal A}\newcommand{\Dop}{\mathcal D}
+\newcommand{\cF}{\mathcal F}\newcommand{\cS}{\mathcal S}\newcommand{\bM}{\mathsf M}
+\newcommand{\bp}[1]{\leavevmode\par\nobreak\noindent{\normalfont\small\sffamily Blueprint identifier: \texttt{#1}.}\par\nobreak}
+\newcommand{\uses}[1]{\par\noindent\textsf{Dependencies:} #1.\par}
+\newcommand{\ml}[1]{{\normalfont\small\nolinkurl{#1}}}
+\newcommand{\bb}[1]{\left\{#1\right\}}
+\DeclareMathOperator*{\esssup}{ess\,sup}
+\DeclareMathOperator{\sgn}{sgn}
+\allowdisplaybreaks[2]
+\begin{document}
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\vspace*{14mm}
+{\Large\sffamily MATHEMATICAL FORMALIZATION BLUEPRINT\par}
+\vspace{12mm}
+{\huge\bfseries The discrete Stein--Wainger\par maximal operator\par}
+\vspace{7mm}
+{\LARGE The combined $\ell^p$ bound, $1<p<\infty$\par}
+\vspace{14mm}
+\[
+ \left\|\sup_{\lambda\in\R}\left|
+ \sum_{y\in\Z^n\setminus\{0\}}
+ f(x-y)\,\mathrm e\!\left(\lambda
+       (y_1^2+\cdots+y_n^2)^d\right)
+ \frac{\Omega(y)}{|y|^n}\right|\right\|_{\ell^p_x}
+ \leq C_{p,n,d,\Omega}\|f\|_{\ell^p}.
+\]
+\vspace{10mm}
+Here $n,d\geq1$, $\Omega$ is smooth away from the origin, homogeneous of
+ degree zero, and has integral zero on the unit sphere. The parameter
+ $\lambda$ is a \emph{scalar}. Only finite exponents $p>1$ are asserted.
+\vfill
+\textbf{Scope and verification status.}
+This document is a mathematical blueprint, not a compiled Lean development.
+Its proposed declaration names are local names, not assertions about mathlib's
+API. The library boundary is stated in Section~1. Beyond that boundary the
+arguments are supplied in the order in which they are used. No harmonic-analysis
+or exponential-sum theorem from either paper, or from another paper, is taken
+as an axiom.
+
+The starting specifications are the papers
+\texttt{arXiv:1907.00405v3} and \texttt{arXiv:2107.14616v2}.
+The proof uses equivalent kernel-side decompositions to avoid importing
+several of their auxiliary results.
+\vspace{8mm}
+{\small Prepared 27 September 2026. Mathlib documentation was checked on that
+ date; no revision-pinned Lean project has been compiled.}
+\end{titlepage}
+\hypersetup{pageanchor=true}\pagenumbering{roman}
+\tableofcontents
+\clearpage\pagenumbering{arabic}
+
+\section{Foundation boundary and conventions}\label{sec:foundation}
+
+\subsection{What is imported}
+The following are the mathematical library facts used without reproving them.
+They are ordinary mathlib-level results, not placeholders for the difficult
+parts of the argument. A ``finite-dimensional Hilbert space'' below may always
+be implemented as a finite product of copies of $\C$ with its Euclidean norm.
+
+\begin{description}[style=nextline]
+\item[F1. Algebra and finite combinatorics.]
+Finite sums and products; induction; pigeonhole counting; binomial and
+multinomial identities; the fundamental theorem of arithmetic for positive
+integers; gcd, lcm, and the Chinese remainder theorem; polynomial coefficient
+identities; a nonzero polynomial has at most its degree many roots.
+\item[F2. Scalar and finite-dimensional analysis.]
+Completeness of $\R$ and $\C$; real powers; geometric series and elementary
+limits; compactness of closed bounded subsets of finite-dimensional spaces;
+the extreme-value theorem; differentiation rules; the mean-value theorem,
+the fundamental theorem of calculus,
+and integration by parts. Change of variables for a differentiable injective
+map with nonzero Jacobian is allowed.
+\item[F3. Measure and integration.]
+Counting measure, Lebesgue measure, product measures, normalized Haar measure
+on a finite torus; Tonelli, Fubini, monotone convergence, dominated convergence,
+Fatou, measurability of parameter integrals, and the elementary properties of
+Bochner integration. Regularity of Lebesgue measure and uniqueness of measures
+from a generating family of rectangles are included.
+\item[F4. Norms and approximation.]
+H\"older's and Minkowski's inequalities, completeness of $L^p$ for $1\leq p<\infty$,
+and density of Schwartz functions in Euclidean $L^p$ for $1\leq p<\infty$. Smooth bump functions
+exist in finite-dimensional real inner-product spaces. Finite-dimensional
+inner-product identities and the adjoint of a bounded Hilbert-space operator
+are included. Interpolation, maximal-function estimates, and singular-integral
+bounds are \emph{not} included in this item.
+\item[F5. Fourier analysis at the library boundary.]
+Fourier inversion and differentiation on Schwartz functions, the convolution
+identity on that class, Euclidean $L^2$ Plancherel, and the orthonormal Fourier
+basis of $L^2(\T^n)$. The resulting unitary identification
+$\ell^2(\Z^n)\simeq L^2(\T^n)$ is included. Its elementary consequence
+$\|m(D)\|_{2\to2}\leq\|m\|_\infty$ is allowed. No multiplier theorem at
+$p\ne2$ is included.
+\end{description}
+
+For specificity, the checked documentation includes
+\ml{Mathlib.Analysis.Fourier.LpSpace}, with
+\ml{MeasureTheory.Lp.norm_fourier_eq};
+\ml{Mathlib.Analysis.Fourier.AddCircleMulti}, with
+\ml{UnitAddTorus.mFourierBasis} and
+\ml{UnitAddTorus.hasSum_sq_mFourierCoeff};
+\ml{Mathlib.Analysis.Distribution.SchwartzSpace.Basic}, with
+\ml{SchwartzMap.denseRange_toLpCLM}; and
+\ml{Mathlib.MeasureTheory.Integral.MeanInequalities}.
+The documentation links are collected at the end. These are library entry
+points, not a claim that a single declaration implements every conversion
+between the conventions below and Lean's bundled types.
+
+\subsection{Types, measures, and Fourier signs}
+Fix $n,d\in\N$ with $n,d\geq1$ and put $D=2d$. Use
+\[
+ E=\R^n,\qquad G=\Z^n,\qquad \T^n=(\R/\Z)^n,
+ \qquad P(x)=(x_1^2+\cdots+x_n^2)^d.
+\]
+The inclusion $G\hookrightarrow E$ is coordinatewise. In particular $P(y)\in\Z$
+for $y\in G$. Write $|x|$ for the Euclidean norm, $|x|_\infty$ for the maximum
+coordinate norm, and $\mathrm e(t)=\exp(2\pi i t)$. The torus has Haar mass one.
+All lattice norms use counting measure.
+
+We deliberately use the \emph{positive} sign for the forward transform:
+\begin{align*}
+ \widehat f(\xi)&=\sum_{x\in G}f(x)\ee{x\cdot\xi},&
+ \check m(y)&=\int_{\T^n}m(\xi)\ee{-y\cdot\xi}\,d\xi,\\
+ \widehat h(\xi)&=\int_Eh(x)\ee{x\cdot\xi}\,dx,&
+ \check a(y)&=\int_Ea(\xi)\ee{-y\cdot\xi}\,d\xi.
+\end{align*}
+A Euclidean symbol and its periodization are never identified without saying
+so. The notation $m(D)f$ means inverse transform of $m\widehat f$ in the
+specified group. Convolution is $(k*f)(x)=\int k(y)f(x-y)\,dy$, or the analogous
+sum. Define $M_\beta f(x)=\ee{\beta\cdot x}f(x)$. Thus
+\begin{equation}\label{eq:modulation}
+ [m(\,\cdot-\beta)](D)=M_{-\beta}m(D)M_\beta.
+\end{equation}
+This sign convention is equivalent to the library convention by reflection.
+
+\subsection{Quantifiers and constants}
+An inequality $A\lesssim B$ means $A\leq CB$ for a finite positive constant
+independent of every displayed scale, finite index set, and input function.
+Dependencies are stated at the lemma or at the beginning of the section.
+Constants may depend on $n,D$ and finitely many seminorms of the fixed smooth
+profiles. They may depend on $p$ once an $L^p$ conclusion is asserted.
+
+The notation $\delta^{-O_m(1)}$ has the precise meaning
+$C_m\delta^{-C_m}$ for some $C_m\geq1$, independent of $N$ and $\delta\in(0,1/2]$.
+It is used only in the finite induction on a polynomial's degree. A finite sum,
+product, or fixed positive power of such quantities has the same form: multiply
+the constants, add the exponents, and enlarge the larger of the two. A lower
+bound $\delta^{O_m(1)}$ means the reciprocal of such an upper bound. These
+conventions are existential bounds, not unspecified asymptotic hypotheses.
+
+Every estimate for a supremum is first proved for finite families. Every
+lattice $\ell^p$ conclusion can first be read with the output sum restricted to
+a finite set. An extended norm is not converted into a real-valued $L^p$ norm
+until finiteness has been proved. The limiting rules are proved next.
+
+\section{Elementary norm, maximal, and randomization tools}\label{sec:tools}
+
+\begin{lemma}[Finite reductions and extension]\label{lem:finite}
+\bp{finite\_reduction}
+Let $1\leq p<\infty$. Finite-support functions are dense in $\ell^p(G)$.
+If $u_k(x)\to u(x)$ pointwise and $\|u_k\|_p\leq B$, then $\|u\|_p\leq B$.
+For a family $T_a$ on $G$, a bound
+$\|\max_{a\in F}|T_af|\|_p\leq B\|f\|_p$ for every finite $F$ implies the same
+bound for $\sup_a|T_af|$, provided the latter is pointwise defined as an
+extended nonnegative number. On $E$ the same assertion holds for a countable
+family. A uniformly bounded family of linear operators on a dense subspace
+extends uniquely to its completion.
+\end{lemma}
+\begin{proof}
+For $f_R=f\ind_{\{|x|_\infty\leq R\}}$, the $p$th power of
+$\|f-f_R\|_p$ is the tail of the convergent nonnegative series
+$\sum_x|f(x)|^p$, hence tends to zero. Fatou gives the second assertion.
+For the third, fix a finite output set $E_0$ and a number $B_0$ below
+$\sum_{x\in E_0}(\sup_a|T_af(x)|)^p$. At every $x\in E_0$ choose one index
+approximating the supremum sufficiently closely that the sum exceeds $B_0$.
+Only finitely many indices have been chosen. The assumed bound bounds $B_0$.
+Take the supremum over $B_0$, then over finite $E_0$. For a countable family on
+$E$, increasing finite maxima and monotone convergence give the assertion.
+For extension, send a Cauchy approximating sequence to its image sequence;
+the uniform Lipschitz estimate makes the latter Cauchy, and also proves
+independence of the approximating sequence. Linearity and the norm estimate
+pass to the limit.
+\end{proof}
+
+\begin{lemma}[Young, dual testing, and subsequences]\label{lem:young}
+\bp{young\_duality\_subsequence}
+For $1\leq p\leq\infty$ on $E$ or $G$,
+$\|k*f\|_p\leq\|k\|_1\|f\|_p$.
+For $1<p<\infty$, the $L^p$ norm of $h$ is the supremum of
+$|\int h\overline g|$ over $\|g\|_{p'}\leq1$; bounded functions of finite-measure
+support suffice after truncation. If $h_k\to h$ in $L^p$, a subsequence
+converges almost everywhere.
+\end{lemma}
+\begin{proof}
+For finite sums Young's inequality follows by applying Minkowski to
+$\sum_y k(y)f(\cdot-y)$. For integrals approximate the integrand by simple
+functions, use Minkowski, and pass by Fatou; truncating $k$ and $f$ removes any
+initial bounded-support assumption. Translation preserves the $L^p$ norm.
+The case $p=\infty$ follows directly from the integral of $|k|$.
+
+H\"older gives the upper bound in dual testing. On a finite-measure set where
+$1/N\leq|h|\leq N$, put
+$g=h|h|^{p-2}/\|h\|_{L^p(\text{that set})}^{p-1}$, with value zero off the
+set. Its $L^{p'}$ norm is one and the pairing equals the restricted $L^p$ norm.
+An increasing exhaustion and monotone convergence prove equality, including
+when the norm is initially infinite. For duality arguments starting on
+Schwartz functions, the tests just used can be approximated both in $L^{p'}$
+and in $L^2$: truncate, approximate by continuous compactly supported functions,
+and convolve with a shrinking smooth bump. Uniform continuity controls the
+last step, while regularity of Lebesgue measure controls the preceding step.
+
+Choose a subsequence with $\|h_{k_j}-h\|_p^p\leq2^{-2j p}$.
+Chebyshev bounds the measure of $|h_{k_j}-h|>2^{-j}$ by $2^{-jp}$.
+The measure of the union of these events for $j\geq J$ tends to zero as
+$J\to\infty$. Outside their limsup, the subsequence converges pointwise.
+\end{proof}
+
+\begin{lemma}[Distributional interpolation]\label{lem:interpolation}
+\bp{sublinear\_interpolation}
+Suppose $T$ is homogeneous and subadditive in pointwise norm, possibly with a
+finite-dimensional normed input or output. If it is weak type $(a,a)$ with
+constant $A$ and weak type $(b,b)$ with constant $B$, where
+$1\leq a<p<b<\infty$, then
+\[
+ \|Tf\|_p\leq C_{a,b,p}A^{1-\theta}B^\theta\|f\|_p,
+ \qquad \frac1p=\frac{1-\theta}{a}+\frac\theta b.
+\]
+If the second endpoint is strong $(\infty,\infty)$, then
+$\|Tf\|_p\leq C_{a,p}A^{a/p}B^{1-a/p}\|f\|_p$ for $p>a$.
+Strong endpoint estimates may be used in place of weak ones.
+\end{lemma}
+\begin{proof}
+Tonelli applied to $u^p=\int_0^u pt^{p-1}dt$ gives
+$\|u\|_p^p=p\int_0^\infty t^{p-1}\mu\{u>t\}\,dt$.
+Split $f=f_>+f_\leq$ at $|f|=ct$. Subadditivity gives
+\[
+ \mu\{|Tf|>t\}\leq (2A/t)^a\!\int_{|f|>ct}|f|^a
+ +(2B/t)^b\!\int_{|f|\leq ct}|f|^b.
+\]
+Substitute this into the layer integral and exchange nonnegative integrals.
+The first inner integral is
+$\int_0^{|f|/c}t^{p-a-1}dt=(|f|/c)^{p-a}/(p-a)$; the second is
+$\int_{|f|/c}^\infty t^{p-b-1}dt=(|f|/c)^{p-b}/(b-p)$.
+Consequently
+\[
+ \|Tf\|_p^p\leq
+ \left(\frac{p2^aA^ac^{a-p}}{p-a}
+       +\frac{p2^bB^bc^{b-p}}{b-p}\right)\|f\|_p^p.
+\]
+Choose $c=(A^a/B^b)^{1/(b-a)}$. Taking the $p$th root gives the stated
+exponents. Zero endpoint constants are handled by a limit. For the infinite
+endpoint choose $c=(2B)^{-1}$, so $|Tf_\leq|\leq t/2$, and retain only the
+first term. Strong bounds imply weak bounds by Chebyshev. Splitting according
+to the input's pointwise norm proves the vector version without any change.
+\end{proof}
+
+\begin{lemma}[The elementary maximal function]\label{lem:maximal}
+\bp{hardy\_littlewood\_maximal}
+For $X=E$ or $G$ define $\bM f(x)$ as the supremum of the averages of $|f|$ on
+centered axis-parallel cubes. On $G$ use integer radii including zero.
+Then
+\[
+ \mu\{\bM f>t\}\leq C_n t^{-1}\|f\|_1,
+ \qquad \|\bM f\|_p\leq C_{n,p}\|f\|_p\quad(1<p\leq\infty).
+\]
+For $R\geq1$ set $B_R(x)=R^{-n}(1+|x|/R)^{-n-1}$. Both its Euclidean integral
+and its lattice sum are bounded independently of $R$, and
+\begin{equation}\label{eq:envelope}
+ B_R*|f|\leq C_n\bM f,
+ \qquad B_R*_{E}B_L\leq C_n B_{\max(R,L)}\quad(R,L\geq1).
+\end{equation}
+\end{lemma}
+\begin{proof}
+Given finitely many cubes on which the average exceeds $t$, repeatedly select
+one of largest side length and discard every remaining cube intersecting it.
+The selected cubes are disjoint. Each discarded cube is contained in the
+threefold dilation of its selected cube. The union of the original cubes has
+measure at most $3^n$ times the sum of the selected measures (with an equally
+bounded counting-measure factor on $G$). That sum is at most
+$t^{-1}\|f\|_1$. On $G$ apply this to arbitrary finite subsets of the level
+set. On $E$ first apply it to a finite subcover of a compact subset of the
+level set and use inner regularity. Averages are measurable parameter
+integrals; rational radii suffice, since changing the radius changes the
+integral continuously by dominated convergence and cube boundaries have
+measure zero. Thus the level set is measurable. The $L^\infty$ bound has
+constant one. Lemma~\ref{lem:interpolation} proves the strong bounds.
+
+The cube $|x|_\infty\leq R$ has at most $(2R+1)^n$ lattice points, and
+Euclidean volume $(2R)^n$. Divide space into $|x|\leq R$ and
+$2^kR<|x|\leq2^{k+1}R$. The contribution of the $k$th annulus to the integral
+or sum of $B_R$ is at most $C_n2^{-k}$. The same decomposition of the
+convolution gives the first inequality in \eqref{eq:envelope}.
+
+For the second assume $R\geq L$. If $|x|\leq2R$, bound $B_R$ by $R^{-n}$
+and integrate $B_L$. If $|x|>2R$, split the convolution into
+$|z|\leq|x|/2$ and its complement. On the first part
+$B_R(x-z)\leq C B_R(x)$. On the second
+$B_L(z)\leq C L|x|^{-n-1}\leq C R|x|^{-n-1}$, and integrate $B_R(x-z)$.
+This is the required bound. Interchanging $R,L$ treats the other order.
+\end{proof}
+
+\begin{lemma}[Schur, Hilbert--Schmidt, and linearization]\label{lem:ttstar}
+\bp{ttstar\_and\_linearization}
+If $H$ is a kernel with row $L^1$ bound $A$ and column $L^1$ bound $B$, then
+$\|H\|_{2\to2}\leq\sqrt{AB}$. Its operator norm is also at most
+$\|H\|_{L^2(X\times X)}$ when that norm is finite.
+For a bounded Hilbert-space operator $T$, $\|T\|^2=\|TT^*\|$.
+A uniform bound for all pointwise selections from a finite family of linear
+operators bounds the maximum of their absolute values.
+\end{lemma}
+\begin{proof}
+Cauchy--Schwarz gives
+$|Hg(x)|^2\leq(\int|H(x,y)|dy)\int|H(x,y)||g(y)|^2dy$.
+Integrate in $x$ to obtain $AB\|g\|_2^2$. Applying Cauchy--Schwarz without
+weights proves the Hilbert--Schmidt assertion. Dual testing gives
+$\|T\|=\|T^*\|$, and
+$\|T^*g\|^2=\ip{TT^*g}{g}\leq\|TT^*\|\|g\|^2$ proves one inequality;
+submultiplicativity proves the other. For linearization, at each point choose
+an index attaining the finite maximum, resolving ties by a fixed ordering.
+The sets on which each index is selected are measurable. Apply the uniform
+operator estimate to this selection. Infinite lattice families then follow
+from Lemma~\ref{lem:finite}; separable Euclidean families follow by countable
+approximation. The initially finite selections used below are bounded
+operators even before their uniform estimate: the sum of the finitely many
+absolute convolution operators supplies a finite preliminary bound.
+\end{proof}
+
+\begin{lemma}[Rademacher square functions]\label{lem:khintchine}
+\bp{rademacher\_and\_vector\_extension}
+For finitely many vectors $v_i$ in a Hilbert space and independent uniform
+signs $\epsilon_i\in\{-1,1\}$, for every $0<p<\infty$,
+\[
+ c_p\Big(\sum_i\|v_i\|^2\Big)^{1/2}
+ \leq\big(\E\|\sum_i\epsilon_i v_i\|^p\big)^{1/p}
+ \leq C_p\Big(\sum_i\|v_i\|^2\Big)^{1/2}.
+\]
+A scalar linear operator bounded on $L^p$ with norm $A$ therefore acts on
+finite $\ell^2$-valued sequences with norm at most $C_pA$.
+\end{lemma}
+\begin{proof}
+Put $S=\sum_i\|v_i\|^2$. If $S=0$, every vector is zero and both
+claims are immediate. Assume $S>0$. Expanding the inner product gives
+$\E\|\sum\epsilon_i v_i\|^2=S$. In the $2r$th moment every term with a sign
+appearing once vanishes. Partition the $2r$ positions according to their
+common indices. There are at most $(2r)^{2r}$ partitions. A surviving block
+has size $m\geq2$, and
+$\sum_i\|v_i\|^m\leq S^{m/2}$: divide by $S^{m/2}$ and use that the resulting
+nonnegative numbers have sum one and each is at most one. Dropping the
+requirement that different blocks have different indices bounds each
+partition's contribution by $S^r$. This proves the upper even-moment bound,
+and H\"older gives every smaller positive moment.
+
+For the lower bound put $X=\|\sum\epsilon_i v_i\|^2$.
+The fourth-moment expansion gives $\E X^2\leq C S^2$. Since
+$S\leq S/2+(\E X^2)^{1/2}\Prb\{X>S/2\}^{1/2}$, that event has probability
+at least a positive absolute constant. It follows that
+$\E X^{p/2}\geq c_pS^{p/2}$.
+For the operator assertion randomize its finite list of inputs, use its
+scalar $L^p$ bound for every sign choice, average, and apply the two
+inequalities just proved pointwise before integrating.
+\end{proof}
+
+\begin{lemma}[Binary partial sums]\label{lem:binary}
+\bp{binary\_maximal\_inequality}
+Let $u_1,\ldots,u_{2^L}$ be complex numbers. For the intervals
+$I_{l,k}=\{k2^l+1,\ldots,(k+1)2^l\}$, $0\leq l\leq L$, one has
+\[
+ \max_{0\leq J\leq2^L}\Big|\sum_{j=1}^J u_j\Big|
+ \leq\sum_{l=0}^L\Big(\sum_{k=0}^{2^{L-l}-1}
+                 \big|\sum_{j\in I_{l,k}}u_j\big|^2\Big)^{1/2}.
+\]
+\end{lemma}
+\begin{proof}
+The binary expansion of $J$ partitions $\{1,\ldots,J\}$ into at most one
+aligned interval of each length $2^l$. The triangle inequality bounds the
+partial sum by the sum of the absolute values of these interval sums. At each
+length a selected absolute value is at most the square root of the sum of all
+squared absolute values. The resulting right side does not depend on $J$.
+\end{proof}
+
+\section{Elementary rational approximation and cancellation}\label{sec:arithmetic}
+Throughout this section the degree is bounded in advance. For $t\in\R$ put
+$\|t\|_{\T}=\min_{a\in\Z}|t-a|$. Distances between rational points are torus
+distances. All assertions about a denominator use its positive reduced value.
+
+\begin{lemma}[The polynomial identities used by both $TT^*$ arguments]\label{lem:radialcoeff}
+\bp{radial\_polynomial\_coefficients}
+The polynomial $P$ has integer coefficients. For $y,z\in\Z^n$ and a positive
+integer $q$, $y\equiv z\pmod q$ coordinatewise implies
+$P(y)\equiv P(z)\pmod q$. In the variable $t=z_i$, with all other coordinates
+fixed, $P(z+h)$ has leading coefficient one and coefficient $Dh_i$ at
+$t^{D-1}$. Consequently $A P(z-X)-B P(z-Y)$ has coefficients $A-B$ and
+$-D(AX_i-BY_i)$ at these two powers. Also, off zero,
+$\nabla P(z)=D|z|^{D-2}z$.
+\end{lemma}
+\begin{proof}
+Sums, squares and the integer power $d$ preserve integer coefficients and
+congruences, proving the first assertions. Write
+$C=\sum_{l\ne i}(z_l+h_l)^2$. The binomial theorem gives
+\[
+ ((t+h_i)^2+C)^d=(t+h_i)^{2d}
+       +\sum_{a=0}^{d-1}\binom da(t+h_i)^{2a}C^{d-a}.
+\]
+Every term of the remaining sum has degree at most $2d-2$ in $t$.
+The binomial expansion of the first term has the stated top two coefficients.
+Taking the indicated linear combination gives the difference formula.
+Differentiating $(\sum_l z_l^2)^d$ with respect to $z_i$ gives
+$2d z_i(\sum_l z_l^2)^{d-1}=D|z|^{D-2}z_i$.
+When $n=1$ the sum defining $C$ is empty and equals zero, so the same formulas
+apply without a separate dimension restriction.
+\end{proof}
+
+\begin{lemma}[Divisors, separation, and lattice counts]\label{lem:divisor}
+\bp{divisor\_bound\_and\_rational\_separation}
+For every $\epsilon>0$ there is $C_\epsilon$ such that the number $\tau(q)$ of
+positive divisors of $q$ is at most $C_\epsilon q^\epsilon$.
+Distinct rational points with denominators $q,r$ are separated by at least
+$(qr)^{-1}$. If $r\mid q$, then in an interval of length $L$ the number of
+integers $h$ for which $r\mid D h$ is at most $D L/r+D+1$.
+\end{lemma}
+\begin{proof}
+Write $q=\prod p^{a_p}$, so $\tau(q)=\prod(a_p+1)$. For
+$p\geq2^{2/\epsilon}$, $a+1\leq2^a\leq p^{\epsilon a/2}$.
+There are finitely many smaller primes, and for each of them
+$\sup_{a\geq0}(a+1)p^{-\epsilon a}<\infty$, since an exponential eventually
+dominates $a+1$. Multiplying these finitely many constants proves the bound.
+A nonintegral number $a/q-b/r$ has distance at least $1/(qr)$ from $\Z$:
+after multiplication by $qr$ the distance is a positive integer.
+Finally $r\mid Dh$ is equivalent to $r/\gcd(r,D)\mid h$. Consecutive solutions
+are separated by that integer. Counting an arithmetic progression in an
+interval gives at most $L\gcd(r,D)/r+1$, which is bounded as stated.
+\end{proof}
+
+\begin{lemma}[Many approximate multiples]\label{lem:multiples}
+\bp{many\_multiples\_inverse}
+There are absolute constants $c,C>0$ with the following property. Suppose
+$0<\eta\leq1$, $0\leq E\leq c\eta$, $N\geq C\eta^{-2}$, and
+$H\subset\{1,\ldots,N\}$ has at least $\eta N$ elements. If
+$\|h\alpha\|_{\T}\leq E$ for every $h\in H$, there is an integer
+$1\leq r\leq2/\eta$ such that
+\[
+ \|r\alpha\|_{\T}\leq C E\eta^{-2}N^{-1}.
+\]
+For $H\subset[-c_0N,c_0N]\cap\Z$ the same conclusion holds with constants
+depending on $c_0$, provided $|H|\geq\eta N$ and the corresponding enlarged
+smallness and size hypotheses hold.
+\end{lemma}
+\begin{proof}
+List $H$ increasingly. The sum of its consecutive gaps is less than $N$.
+As $|H|-1\geq\eta N/2$, one gap $r$ is at most $2/\eta$.
+Subtracting the two approximation inequalities gives an integer $a$ with
+$\gamma=r\alpha-a$ and $|\gamma|\leq2E$. If $\gamma=0$ the conclusion holds.
+Otherwise partition $1,\ldots,N$ by residues $b$ modulo $r$. In one such
+progression the numbers $b\alpha+t\gamma$ range over an interval of length
+at most $M|\gamma|$, where $M$ is the number of terms. The condition that
+such a number be within $E$ of an integer selects at most
+\[
+ (M|\gamma|+3)(2E/|\gamma|+1)
+ \leq4EM+6E/|\gamma|+3
+\]
+values of $t$. Indeed at most $M|\gamma|+3$ intervals
+$[a-E,a+E]$ meet the range, and each contains at most
+$2E/|\gamma|+1$ terms; the last inequality uses $|\gamma|\leq2E$.
+Summing over the $r$ residue classes gives
+$\eta N\leq4EN+6rE/|\gamma|+3r$.
+Choose, for example, $c\leq1/16$ and enlarge $C$ so that
+$3r\leq\eta N/4$. It follows that
+$|\gamma|\leq12rE/(\eta N)\leq24E/(\eta^2N)$.
+For a signed interval remove $0$, choose the positive or negative half with
+at least half the remaining elements, and replace negative integers by their
+opposites. Increasing its containing interval to
+$\{1,\ldots,\lceil c_0N\rceil\}$ reduces it to the proved assertion.
+\end{proof}
+
+\begin{lemma}[Inverse polynomial exponential sum]\label{lem:inverseweyl}
+\bp{polynomial\_sum\_inverse}
+For each $m\geq1$ there are $C_m,c_m>0$ such that the following holds.
+Let $F(t)=\sum_{k=0}^m a_k t^k$ be a real polynomial, $N\geq1$, and
+$0<\delta\leq1/2$. If
+\[
+ \left|\sum_{t=1}^N\ee{F(t)}\right|\geq\delta N,
+\]
+then there is an integer $1\leq q\leq C_m\delta^{-C_m}$ such that
+\begin{equation}\label{eq:inversecoeff}
+ \|q a_k\|_{\T}\leq C_m\delta^{-C_m}N^{-k}
+ \qquad(1\leq k\leq m).
+\end{equation}
+The same assertion, with constants also depending on $c_0$, holds for a sum
+on an integer interval contained in $[-c_0N,c_0N]$ of length at least
+$\delta N$. It also holds when the summands have weights $w(t)$ satisfying
+$\max|w|+\sum|w(t+1)-w(t)|\leq c_0$, and the weighted sum has magnitude at
+least $\delta N$.
+\end{lemma}
+\begin{proof}
+We prove the first assertion by induction on $m$. Each use of
+$\delta^{-O_m(1)}$ in this proof means the explicit existential convention
+in Section~\ref{sec:foundation}; finite products and powers only enlarge its
+constant. Thus a single $C_m$ is chosen after the finitely many bounds at
+stage $m$ have been established, not before an unbounded iteration.
+
+For $m=1$, the geometric-sum identity gives
+$|\sum_{t=1}^N\ee{a_1t}|\leq\min(N,2/|1-\ee{a_1}|)$.
+The inequality $|1-\ee{u}|=2|\sin\pi u|\geq4\|u\|_\T$ follows from
+concavity of sine on $[0,\pi/2]$. Hence $q=1$ works.
+Assume the assertion proved for degree $m-1$. If
+$N\leq C\delta^{-C}$ for any fixed constant required below, take $q=1$
+and enlarge the final exponent so that the right side of
+\eqref{eq:inversecoeff} is at least $1/2$ for every $k\leq m$.
+We may therefore impose every finite polynomial-in-$\delta^{-1}$ lower bound
+on $N$ that occurs in the following argument.
+
+Set $z_t=\ee{F(t)}$ on $1\leq t\leq N$ and zero otherwise. Expanding a square,
+\[
+ \delta^2N^2\leq\left|\sum z_t\right|^2
+ =N+2\Re\sum_{h=1}^{N-1}\sum_{t=1}^{N-h}z_{t+h}\overline{z_t}.
+\]
+Consequently $\sum_{h=1}^{N-1}|C(h)|\geq\delta^2N^2/4$ once
+$N\geq2\delta^{-2}$, where $C(h)=\sum_{t=1}^{N-h}\ee{F(t+h)-F(t)}$.
+The shifts with $|C(h)|<\delta^2N/8$ contribute less than
+$\delta^2N^2/8$. Since every $|C(h)|\leq N$, at least
+$\delta^2N/8$ shifts have $|C(h)|\geq\delta^2N/8$; their overlap lengths
+$N-h$ are also at least $\delta^2N/8$.
+
+For each selected shift the induction hypothesis, applied to its overlap
+interval, supplies $q_h\leq\delta^{-O_m(1)}$ and in particular
+\[
+ \|q_h m h a_m\|_\T
+       \leq\delta^{-O_m(1)}N^{-(m-1)}.
+\]
+Pigeonhole the integer $q_h$. For one value $q_*$ this holds for at least
+$\delta^{O_m(1)}N$ shifts. Lemma~\ref{lem:multiples}, with
+$\alpha=q_*ma_m$, $E=\delta^{-O_m(1)}N^{-(m-1)}$, and
+$\eta=\delta^{O_m(1)}$, applies after imposing the permitted lower bound on
+$N$. It gives an integer $q_0\leq\delta^{-O_m(1)}$ and an integer $b$ such that
+\[
+ a_m=b/q_0+\varepsilon,
+ \qquad |\varepsilon|\leq\delta^{-O_m(1)}N^{-m}.
+\]
+Here $q_0$ may be the unreduced integer $m q_*r$; reduction is unnecessary.
+
+It remains to approximate the other coefficients with a common denominator.
+Choose a positive number $\zeta=\delta^{O_m(1)}$ sufficiently small that
+$m|\varepsilon|N^{m-1}(2\zeta N)\leq\delta/(100\pi)$ and
+$2\zeta\leq\delta/10$. Choose $L$, a positive multiple of $q_0$, between
+$\zeta N$ and $2\zeta N$; this is possible after enlarging the lower bound
+on $N$. Divide $1,\ldots,N$ into full consecutive blocks of length $L$ and
+one remainder of length less than $L$. Discard the remainder; its contribution
+has magnitude less than $\delta N/10$. On a full block and a fixed residue
+class modulo $q_0$, the factor $\ee{b t^m/q_0}$ is constant, because
+$(t+q_0)^m-t^m$ is divisible by $q_0$. The factor $\ee{\varepsilon t^m}$
+differs from its value at the start of the block by at most $\delta/25$,
+using $|\ee{u}-\ee{v}|\leq2\pi|u-v|$ and the preceding choice of $\zeta$.
+Freezing these factors changes the sum over all full blocks by at most
+$\delta N/25$.
+
+The triangle inequality therefore implies that one block-residue progression
+has a sum of the lower-degree phase $F_{<m}(t)=\sum_{k<m}a_kt^k$ whose
+magnitude is at least $(\delta/2)$ times its length $B=L/q_0$.
+Write this progression as $t=t_0+q_0u$, $1\leq u\leq B$, with $|t_0|\leq2N$.
+Its coefficients are
+\[
+ c_l=q_0^l\sum_{k=l}^{m-1}\binom{k}{l}a_k t_0^{k-l}.
+\]
+The induction hypothesis supplies $r\leq\delta^{-O_m(1)}$ with
+$\|r c_l\|_\T\leq\delta^{-O_m(1)}B^{-l}$ for $1\leq l<m$.
+Since $B\geq\delta^{O_m(1)}N$, these errors are at most
+$\delta^{-O_m(1)}N^{-l}$. Substituting $u=(t-t_0)/q_0$ in the polynomial
+identity gives, by the binomial theorem,
+\[
+ a_k=\sum_{l=k}^{m-1}\binom{l}{k}q_0^{-l}(-t_0)^{l-k}c_l
+ \quad(1\leq k<m).
+\]
+Multiply by $q=rq_0^{m-1}$. Every coefficient multiplying $r c_l$ is an
+integer. Its magnitude is at most $\delta^{-O_m(1)}N^{l-k}$, so its error
+contribution is at most $\delta^{-O_m(1)}N^{-k}$. Summing at most $m$ such
+terms proves \eqref{eq:inversecoeff} for $k<m$. The integer $q$ is a multiple
+of $q_0$, so the leading-coefficient estimate also holds. This completes
+the induction, including the finite small-$N$ alternatives.
+
+For an interval, translate it to $1,\ldots,L$. Its length satisfies
+$\delta N\leq L\leq(2c_0+1)N$. The first assertion controls the translated
+coefficients at scale $L$. Translating back uses the same triangular binomial
+identity, with translation size at most $(c_0+1)N$. Multiplication of each
+error of degree $l$ by a number of size $O(N^{l-k})$ gives the asserted
+error of degree $k$ at scale $N$.
+
+For weights let $S_u=\sum_{t=a}^u\ee{F(t)}$. The finite identity
+\[
+ \sum_{t=a}^b w(t)\ee{F(t)}
+   =w(b)S_b+\sum_{t=a}^{b-1}(w(t)-w(t+1))S_t
+\]
+shows that some prefix has $|S_u|\geq\delta N/c_0$ (replace $c_0$ by
+$\max(1,c_0)$). Its length is at least its magnitude. Apply the proved
+interval assertion with the correspondingly smaller $\delta$.
+\end{proof}
+
+\begin{corollary}[Slicing and an exact rational coefficient]\label{lem:weylcor}
+\bp{weighted\_slice\_and\_rational\_cancellation}
+Let a polynomial phase of degree at most $m$ be summed on a box of side $N$
+in $\Z^n$. Suppose its weights have magnitude at most $A$ and variation at
+most $A$ on each line in the first coordinate. If the sum has magnitude at
+least $\delta A N^n$, one first-coordinate slice satisfies the conclusion of
+Lemma~\ref{lem:inverseweyl}, with constants depending on $n,m$.
+In particular, let $N/2\leq Q\leq N^2$ and consider a complete polynomial
+sum of side $Q$. If, on every such slice, the coefficient of one power
+$t^k$, $k\geq2$, is an exact rational number whose denominator lies in
+$[N^{1/2}/2,N]$, then its normalized magnitude is at most $C_mN^{-c_m}$.
+\end{corollary}
+\begin{proof}
+The triangle inequality over the other $n-1$ coordinates gives a slice with
+magnitude at least $\delta A N$. Divide its weights by $A$ and apply the
+weighted assertion. For the second statement choose a small $c>0$ and suppose
+a slice average exceeds $N^{-c}$. Its inverse denominator $r$ is at most
+$C_mN^{cC_m}$ and satisfies
+$\|r b/q\|_\T\leq C_mN^{cC_m}Q^{-k}$.
+Choose $cC_m<1/8$. For sufficiently large $N$, $r<q$ and the displayed
+upper bound is less than $1/N\leq1/q$. But $b/q$ is reduced, and $r<q$
+forces $\|rb/q\|_\T\geq1/q$. This contradiction bounds every slice average.
+Average their absolute values. The remaining finite range of $N$ is absorbed
+by enlarging $C_m$.
+\end{proof}
+
+\begin{lemma}[A complete quadratic sum]\label{lem:gauss}
+\bp{quadratic\_complete\_sum}
+Let $A,B,Q\in\Z$, $Q\geq1$, and let $v$ be the reduced denominator of $A/Q$.
+Then
+\[
+ G=Q^{-1}\sum_{z\bmod Q}\ee{(Az^2+Bz)/Q}
+ \quad\hbox{satisfies}\quad |G|\leq(2/v)^{1/2}.
+\]
+If the linear coefficient is $-2\alpha h$, with $\alpha=a/q$ reduced and
+$q\mid Q$, a nonzero $G$ additionally requires $q\mid2vh$.
+\end{lemma}
+\begin{proof}
+In $|G|^2$ put $t=z-w$ and sum first over $w$. The finite geometric sum is
+zero unless $Q\mid2At$. Consequently
+\[
+ |G|^2=Q^{-1}\sum_{t\bmod Q:\,Q\mid2At}\ee{(At^2+Bt)/Q},
+ \qquad |G|^2\leq\gcd(2A,Q)/Q\leq2/v.
+\]
+Translation $z\mapsto z+v$ does not change the quadratic factor: writing
+$A/Q=a_0/v$, its phase increment is $2a_0z+a_0v\in\Z$.
+The linear factor is multiplied by $\ee{-2avh/q}$. A nonzero sum can be
+unchanged by that multiplication only if $2avh/q\in\Z$.
+Coprimality of $a,q$ yields the stated divisibility.
+\end{proof}
+
+\begin{lemma}[Averaging a periodic phase against a smooth weight]\label{lem:periodic}
+\bp{periodic\_riemann\_sum}
+Fix a Schwartz function $\varphi$ on $E$, put
+$\varphi_L(z)=L^{-n}\varphi(z/L)$, and let $L\geq Q\geq1$.
+If $a:\Z^n\to\C$ is $Q$-periodic in every coordinate and $|a|\leq1$, then,
+for $h\in\Z^n$,
+\begin{align*}
+ &\sum_{z\in\Z^n}a(z)\varphi_L(z)\overline{\varphi_L(z+h)}\\
+ &\quad=\left(Q^{-n}\sum_{r\bmod Q}a(r)\right)
+       \int_E\varphi_L(z)\overline{\varphi_L(z+h)}\,dz
+       +O\big((Q/L)B_L(h)\big).
+\end{align*}
+The absolute value of the integral is at most $C B_L(h)$.
+\end{lemma}
+\begin{proof}
+Write $W_h(z)=\varphi_L(z)\overline{\varphi_L(z+h)}$.
+The inequality
+$(1+|h|/L)\leq(1+|z|/L)(1+|z+h|/L)$ and the Schwartz bounds show, for
+arbitrarily large fixed $A$, that
+\[
+ |W_h(z)|\leq C L^{-2n}(1+|h|/L)^{-n-1}
+ \big[(1+|z|/L)^{-A}+(1+|z+h|/L)^{-A}\big].
+\]
+For $|\nabla W_h|$ the same right side has an additional factor $L^{-1}$.
+One way to verify these inequalities is to split into $|z|\geq|h|/2$ and
+$|z+h|\geq|h|/2$, allocate $n+1$ decay powers to that larger factor, and
+retain $A$ powers in the other. Integration proves the assertion about the
+integral.
+
+For a fixed residue $r$, partition $E$ into cells
+$r+Qk+[0,Q)^n$. The fundamental theorem of calculus along line segments gives
+\[
+ \left|Q^n\sum_kW_h(r+Qk)-\int W_h\right|
+ \leq C_n Q\sum_k Q^n\sup_{r+Qk+[0,Q]^n}|\nabla W_h|.
+\]
+Since $Q\leq L$, the decay envelopes vary by at most a fixed factor on a
+cell. Their cell sums are bounded by their integrals times a fixed constant:
+enlarge each cell by one adjacent layer, compare its supremum with the
+integral on that enlargement, and note the bounded overlap. The last display
+is therefore at most $C(Q/L)B_L(h)$. Divide by $Q^n$, multiply by $a(r)$,
+and sum the $Q^n$ residues. The main terms and errors are exactly those in
+the assertion. Every series used here is absolutely convergent by the same
+decay bounds.
+\end{proof}
+
+\section{Kernel construction and the real-variable multiplier estimates}\label{sec:real}
+Fix a complex-valued $C^\infty$ function $\Omega$ on $E\setminus\{0\}$,
+homogeneous of degree zero, with integral zero on the unit sphere. Put
+$K(x)=\Omega(x)|x|^{-n}$ for $x\ne0$, and put $K(0)=0$ when evaluating a
+lattice kernel. Smooth kernels supported away from zero retain their usual
+smooth extension with value zero there.
+
+\begin{lemma}[Polar integration and a dyadic resolution]\label{lem:dyadic}
+\bp{polar\_cancellation\_and\_dyadic\_kernel}
+There is a nonnegative smooth radial function $\psi$, supported where
+$1/2\leq|x|\leq2$, such that, on writing
+$K_j(x)=K(x)\psi(2^{-j}x)$ for $j\in\Z$,
+\begin{gather}
+ \|\partial^aK_j\|_\infty\leq C_a2^{-j(n+|a|)},\qquad
+ \|K_j\|_{L^1(E)}\leq C,\qquad \int_E K_j=0,\label{eq:dyadicbounds}\\
+ \sum_{j\geq1}K_j(x)=(1-\eta(x))K(x),\label{eq:dyadicresolution}
+\end{gather}
+where $\eta$ is smooth, radial, equal to one on $|x|\leq1$, and zero on
+$|x|\geq2$. For $j\geq1$, also $\sum_{y\in G}|K_j(y)|\leq C$.
+For every real $\mu$,
+\begin{equation}\label{eq:radialcancel}
+ \int_E \ee{\mu P(x)}K_j(x)\,dx=0,
+ \qquad
+ \int_E P(x)\ee{\mu P(x)}K_j(x)\,dx=0.
+\end{equation}
+\end{lemma}
+\begin{proof}
+Here is the needed polar integration formula with its measure construction.
+On $S^{n-1}$ define
+$\sigma(A)=n\,\vol\{r\theta:\theta\in A,\ 0<r\leq1\}$.
+Disjointness of rays and countable additivity of Lebesgue measure make this
+a measure. Dilation of Lebesgue measure gives, for $0<a<b$,
+\[
+ \vol\{r\theta:\theta\in A,\ a<r\leq b\}
+     =\frac{b^n-a^n}{n}\sigma(A).
+\]
+Rectangles $A\times(a,b]$ generate the Borel sets of
+$S^{n-1}\times(0,\infty)$. Uniqueness of measures and the measurable inverse
+$x\mapsto(x/|x|,|x|)$ therefore give
+$dx=r^{n-1}\,dr\,d\sigma(\theta)$. This is the usual sphere area measure:
+on the upper hemisphere the map
+$(r,u)\mapsto r(u,\sqrt{1-|u|^2})$ has absolute Jacobian
+$r^{n-1}/\sqrt{1-|u|^2}$, found by differentiating its columns and subtracting
+their multiples from the radial column. Thus the induced angular density is
+$du/\sqrt{1-|u|^2}$; the lower hemisphere has the same calculation, and their
+common equator has cone measure zero. When $n=1$ the formula is simply the
+two half-lines and counting measure on $\{-1,1\}$.
+
+Choose a nonnegative smooth bump on $(1,2)$ and divide it by its positive
+integral. Let $a(r)$ be its integral from $r$ to $2$, extended by one to
+$r\leq1$ and by zero to $r\geq2$. Put $\eta(x)=a(|x|)$ and
+$\psi(x)=\eta(x)-\eta(2x)$. It is smooth also at zero because both terms are
+constant in a neighborhood of zero. Monotonicity of $a$ gives $\psi\geq0$.
+The support and telescoping identity follow from these definitions.
+Differentiating the identity $K(tx)=t^{-n}K(x)$ successively gives
+$(\partial^aK)(tx)=t^{-n-|a|}(\partial^aK)(x)$. Compactness of
+$1/2\leq|x|\leq2$ bounds each derivative there, so the product and chain rules
+give \eqref{eq:dyadicbounds}. Scaling its support bounds the integral of its
+absolute value. Counting lattice points in $|y|\leq2^{j+1}$ proves the lattice
+bound for $j\geq1$.
+
+For a radial factor $b(r)$ supported away from zero, polar integration gives
+\[
+ \int_E K(x)b(|x|)\,dx
+ =\left(\int_0^\infty b(r)\frac{dr}{r}\right)
+    \left(\int_{S^{n-1}}\Omega(\theta)\,d\sigma(\theta)\right)=0.
+\]
+Apply this first with the radial profile defining $K_j$, then with its
+products with $\ee{\mu r^D}$ and $r^D\ee{\mu r^D}$. This proves all the
+cancellation statements.
+\end{proof}
+
+\begin{lemma}[An integrable-kernel singular-integral estimate]\label{lem:cz}
+\bp{cz\_from\_decomposition}
+Suppose $H\in L^1(E)$ is continuously differentiable off zero, satisfies
+\[
+ |H(x)|\leq A|x|^{-n},\qquad |\nabla H(x)|\leq A|x|^{-n-1},
+\]
+and convolution by $H$ has $L^2$ norm at most $A$. Then it has weak $(1,1)$
+norm at most $C_nA$, and $L^p$ norm at most $C_{n,p}A$ for every $1<p<\infty$.
+The constants do not depend on $\|H\|_1$.
+\end{lemma}
+\begin{proof}
+Divide $H$ by $A$, treating $A=0$ separately, so it suffices to work with
+$A=1$. Start with a Schwartz function $f$ and a level $t>0$. Among the
+axis-parallel dyadic cubes select the maximal cubes $Q$ on which
+$|Q|^{-1}\int_Q|f|>t$. A cube cannot have arbitrarily large ancestors with
+this property, since $f\in L^1$. Dyadic cubes are either disjoint or nested;
+hence the maximal ones are disjoint. Their total measure is at most
+$t^{-1}\|f\|_1$. The parent of a selected cube has average at most $t$, giving
+$|Q|^{-1}\int_Q|f|\leq2^nt$. Outside their union, $|f|\leq t$: shrinking
+dyadic cubes have diameter tending to zero, and continuity of $f$ makes their
+averages tend to its value.
+
+Put $f_Q=|Q|^{-1}\int_Qf$, let $g=f$ off the selected cubes and $g=f_Q$ on
+$Q$, and let $b_Q=(f-f_Q)\ind_Q$. Then
+\[
+ \|g\|_\infty\leq2^nt,\quad \|g\|_1\leq\|f\|_1,\quad
+ \|g\|_2^2\leq2^nt\|f\|_1,\quad
+ \int b_Q=0,\quad\sum_Q\|b_Q\|_1\leq2\|f\|_1.
+\]
+Let $Q^*$ be the cube with the same center $c_Q$ and side length
+$10\sqrt n$ times that of $Q$. Its union has measure at most
+$C_nt^{-1}\|f\|_1$. For $x\notin Q^*$, cancellation gives
+\[
+ (H*b_Q)(x)=\int_Q[H(x-y)-H(x-c_Q)]b_Q(y)\,dy.
+\]
+The segment between $x-y$ and $x-c_Q$ stays at distance at least
+$|x-c_Q|/2$ from zero. The fundamental theorem of calculus and the gradient
+bound therefore bound the bracket by
+$C_n|y-c_Q||x-c_Q|^{-n-1}$. Integration in $x$ outside $Q^*$ is at most
+$C_n$: partition into shells of radii $2^k\ell(Q)$; their contributions are
+at most $C_n2^{-k}\ell(Q)^{-1}$, which are multiplied by
+$|y-c_Q|\leq\sqrt n\ell(Q)$. Consequently
+\[
+ \int_{E\setminus Q^*}|H*b_Q|\leq C_n\|b_Q\|_1.
+\]
+The series of $b_Q$ converges in $L^2$, since their supports are disjoint and
+$f-g\in L^2$. The bounded $L^2$ operator sends its partial sums to an
+$L^2$-convergent sequence. An almost-everywhere convergent subsequence and
+Fatou transfer the last $L^1$ estimate to $H*\sum_Qb_Q$ off the union of
+$Q^*$. Chebyshev there gives a level-set measure at most
+$C_nt^{-1}\|f\|_1$. For the good part, Chebyshev and the $L^2$ bound give
+\[
+ \vol\{|H*g|>t/2\}\leq4t^{-2}\|g\|_2^2
+       \leq C_nt^{-1}\|f\|_1.
+\]
+Together with the expanded cubes this proves the weak estimate.
+
+Lemma~\ref{lem:interpolation} gives the strong bounds for $1<p<2$; $p=2$
+is the hypothesis. The adjoint convolution kernel is
+$H^*(x)=\overline{H(-x)}$, which has the same size, gradient and $L^2$ bounds.
+For $p>2$ apply the proved result to $H^*$ at $p'<2$ and use
+\[
+ |\langle H*f,g\rangle|=|\langle f,H^**g\rangle|
+ \leq C_{n,p}\|f\|_p\|g\|_{p'}.
+\]
+Dual testing, justified in Lemma~\ref{lem:young}, yields the desired norm.
+Schwartz density extends all strong bounds. For weak $(1,1)$ approximate
+an $L^1$ input by Schwartz functions; since this particular $H$ belongs to
+$L^1$, Young gives convergence of their outputs in $L^1$, and an
+almost-everywhere subsequence transfers the distributional bound. Rescaling
+$H$ restores $A$.
+\end{proof}
+
+\begin{lemma}[Uniform signed dyadic multipliers and their limit]\label{lem:signedK}
+\bp{signed\_dyadic\_cz}
+For any finite scalar sequence $|c_j|\leq1$, $j\in\Z$, convolution by
+$\sum_jc_jK_j$ is bounded on $L^p(E)$ by $C_p$, for $1<p<\infty$.
+The symbol
+\[
+ m_K(\xi)=\sum_{j\geq1}\widehat K_j(\xi),\qquad m_K(0)=0,
+\]
+is bounded and defines an $L^p$ multiplier with the same uniform type of
+bound. Its kernel on Schwartz inputs is
+$\mathcal K(x)=K(x)(1-\eta(x))$.
+\end{lemma}
+\begin{proof}
+At each nonzero $x$ only a bounded number of the annular supports meet.
+The size and gradient bounds in Lemma~\ref{lem:cz} follow at once from
+\eqref{eq:dyadicbounds}. For the $L^2$ bound cancellation and
+$|\ee{u}-1|\leq2\pi|u|$ give
+$|\widehat K_j(\xi)|\leq C2^j|\xi|$. If $\xi\ne0$, integrate by parts once
+in the direction $\xi/|\xi|$. The derivative has $L^1$ norm at most $C2^{-j}$,
+so the other bound is $C(2^j|\xi|)^{-1}$. Thus
+\begin{equation}\label{eq:minFourier}
+ |\widehat K_j(\xi)|\leq C\min(2^j|\xi|,(2^j|\xi|)^{-1}).
+\end{equation}
+The sum of these upper bounds over all $j\in\Z$ is bounded: split at the
+last $j$ with $2^j|\xi|\leq1$ and sum the two geometric series. At $\xi=0$
+every summand is zero. Plancherel supplies the required $L^2$ bound, and
+Lemma~\ref{lem:cz} applies to every finite sum.
+
+For $j\geq1$, \eqref{eq:minFourier} gives pointwise convergence of the symbol
+series. Its finite sums are uniformly bounded. Dominated convergence on the
+Fourier side gives $L^2$ convergence of their outputs for each $L^2$ input.
+For a Schwartz input, an almost-everywhere subsequence and Fatou give every
+claimed $L^p$ bound. The kernel sums equal $K(1-\eta)$ by telescoping.
+Convolution of that kernel with a Schwartz function is absolutely convergent
+at each point: the kernel is bounded on compact sets, and its decay at
+infinity is multiplied by a rapidly decreasing translate of the input.
+Dominated convergence identifies the kernel and multiplier limits.
+Density defines the $L^p$ extension.
+\end{proof}
+
+\begin{construction}[A positive band-limited averaging kernel]\label{con:phi}
+Choose a nonzero real even smooth bump $b$ supported in
+$[-1/32,1/32]^n$ and put
+\[
+ \phi(x)=\frac{|\check b(x)|^2}{\int_E|\check b|^2},\qquad
+ \phi_J(x)=2^{-Jn}\phi(2^{-J}x),\qquad
+ \tau_J(\xi)=\widehat\phi(2^J\xi).
+\]
+Then $\phi$ is even, nonnegative and Schwartz, $\int\phi=1$,
+$\int x_i\phi(x)\,dx=0$, and $\supp\widehat\phi\subset[-1/16,1/16]^n$.
+Fourier inversion, the product-convolution identity for Schwartz functions,
+and Plancherel prove these statements; the first moments vanish because their
+integrands are odd. In particular, $|\phi_J|*|f|\leq C\bM f$, also for the
+sampled lattice kernel when $J\geq0$, by Lemma~\ref{lem:maximal}.
+\end{construction}
+
+\begin{lemma}[Signed smoothing errors for truncation]\label{lem:smootherrors}
+\bp{signed\_truncation\_smoothing\_errors}
+For $J\geq1$ define
+\[
+ E_J(x)=\sum_{j\geq J}K_j(x)-(\phi_J*\mathcal K)(x).
+\]
+This is an integrable smooth function of integral zero. With $R=2^J$,
+\begin{equation}\label{eq:EJdecay}
+ |\partial^a E_J(x)|\leq
+ C_aR^{-n-|a|}(1+|x|/R)^{-n-2-|a|}\qquad(|a|=0,1).
+\end{equation}
+Every finite sum $\sum_Jc_JE_J$, $|c_J|\leq1$, is an $L^p(E)$ convolution
+operator with norm at most $C_p$, independently of the finite set of $J$.
+\end{lemma}
+\begin{proof}
+The following identity converges absolutely in $L^1$:
+\begin{equation}\label{eq:EJseries}
+ E_J=\sum_{j\geq J}(K_j-\phi_J*K_j)-\sum_{1\leq j<J}\phi_J*K_j.
+\end{equation}
+For $j\geq J$, the fundamental theorem of calculus under translation gives
+$\|K_j-\phi_J*K_j\|_1\leq\int|z|\phi_J(z)\,dz\,\|\nabla K_j\|_1
+\leq C2^{J-j}$.
+For $j<J$, use $\int K_j=0$ to subtract $\phi_J(x)$ inside the convolution;
+its $L^1$ norm is at most
+$\|\nabla\phi_J\|_1\int|z||K_j(z)|\,dz\leq C2^{j-J}$.
+Both geometric series converge. Each term has integral zero, proving that
+$E_J\in L^1$ and $\int E_J=0$. The pointwise identity follows as well: the
+series defining $\mathcal K$ is dominated by $|K|(1-\eta)$ and is absolutely
+integrable against a translate of the Schwartz function $\phi_J$.
+
+We give the spatial bounds, including their tails, because they will be used
+for signed families. For $|x|\leq16R$, the terms with $j\geq J$ and their
+convolutions have derivatives of order $a$ bounded by
+$C2^{-j(n+|a|)}$. Their sum is at most $CR^{-n-|a|}$. For $j<J$ subtract
+$\partial^a\phi_J(x)$ and use its gradient bound; summing
+$C2^jR^{-n-|a|-1}$ gives the same result.
+
+Now let $r=|x|>16R$. Split the scales in \eqref{eq:EJseries} into
+$2^j<r/4$, $r/4\leq2^j\leq4r$, and $2^j>4r$.
+In the first group $K_j(x)=0$. Cancellation gives, for any prescribed integer
+$N_0$,
+\[
+ |\partial^a(\phi_J*K_j)(x)|
+ \leq C_{N_0}2^jR^{-n-|a|-1}(1+r/R)^{-N_0}.
+\]
+The sum of $2^j$ in this group is at most $Cr$. Its contribution is therefore
+at most $CR^{-n-|a|}(1+r/R)^{1-N_0}$.
+In the middle group there are a bounded number of indices, all at least $J$.
+Taylor's formula, written as two successive fundamental-theorem-of-calculus
+integrals, and the vanishing first moments of $\phi_J$ give
+\[
+ |\partial^a(K_j-\phi_J*K_j)(x)|
+ \leq C\left(\int|z|^2\phi_J(z)\,dz\right)
+                  \|\nabla^2\partial^aK_j\|_\infty
+ \leq C R^2r^{-n-|a|-2}.
+\]
+In the last group $K_j(x)=0$ and $|x-z|\geq2^{j-2}$ on its support.
+The Schwartz bound on $\partial^a\phi_J$, together with $\|K_j\|_1\leq C$,
+bounds its sum by
+$CR^{-n-|a|}(1+r/R)^{-N_0}$.
+Choose $N_0\geq n+|a|+3$. These three estimates prove \eqref{eq:EJdecay}.
+They also justify differentiating all the locally uniformly convergent series.
+
+The bounds just proved imply
+$\int |x||E_J(x)|\,dx\leq CR$ and
+$\|\nabla E_J\|_1\leq C/R$. Cancellation and integration by parts, exactly
+as the two individual inequalities in \eqref{eq:minFourier}, give
+$|\widehat E_J(\xi)|\leq C\min(R|\xi|,(R|\xi|)^{-1})$.
+Thus every finite signed sum has uniformly bounded multiplier and $L^2$ norm.
+For its size bound at a point of radius $r$, sum separately $R\leq r$ and
+$R>r$. In the first sum \eqref{eq:EJdecay} is at most
+$CR^2r^{-n-2}$, whose sum is at most $Cr^{-n}$; in the second it is at most
+$CR^{-n}$, whose sum is also at most $Cr^{-n}$. For the gradient the two
+bounds are respectively $CR^2r^{-n-3}$ and $CR^{-n-1}$, yielding
+$Cr^{-n-1}$. The sums are finite or convergent geometric series even when
+$r<2$. Each finite signed sum is integrable. Lemma~\ref{lem:cz} now gives
+its uniform $L^p$ bound.
+\end{proof}
+
+\section{Oscillatory integrals and a continuous annular maximal estimate}\label{sec:oscillation}
+This section proves the continuous estimates needed later rather than importing
+a continuous Stein--Wainger theorem.
+
+\begin{lemma}[Polynomial sublevel and oscillatory integral]\label{lem:oscint}
+\bp{polynomial\_oscillatory\_integral}
+Fix $m\geq2$ and a bounded interval $I$. If a real polynomial
+$F(t)=\sum_{k=0}^m a_kt^k$ has
+$L=\max_{1\leq k\leq m}|a_k|\geq1$, then for a continuously differentiable
+amplitude supported in $I$,
+\[
+ \left|\int_I\ee{F(t)}a(t)\,dt\right|
+ \leq C_{m,I}L^{-1/m}\left(\|a\|_\infty+\int_I|a'|\right).
+\]
+The same estimate can be applied to one coordinate of an integral over a
+fixed bounded box in $E$, if one nonconstant coefficient on every such slice
+has magnitude at least $L$ and the amplitude and its variation on each slice
+are bounded uniformly.
+\end{lemma}
+\begin{proof}
+First let $Q$ be a polynomial of degree at most $m-1$ whose largest coefficient
+has magnitude at least $L$. If $E_\tau=\{t\in I:|Q(t)|\leq\tau\}$ has measure
+$a>0$, choose $m$ points in this set with pairwise separation at least
+$a/(4m)$. Greedy selection works: the intervals of that radius around fewer
+than $m$ selected points remove measure less than $a/2$.
+Lagrange interpolation at those points writes $Q$ as
+\[
+ Q(t)=\sum_{i=1}^m Q(t_i)
+             \prod_{h\ne i}\frac{t-t_h}{t_i-t_h}.
+\]
+To verify this formula subtract the right side from $Q$; the difference has
+degree at most $m-1$ and $m$ distinct roots, hence is zero.
+Every numerator coefficient is bounded by a constant depending only on
+$m,I$, and every denominator has magnitude at least $(a/(4m))^{m-1}$.
+Thus $L\leq C\tau a^{-(m-1)}$, or
+$|E_\tau|\leq C(\tau/L)^{1/(m-1)}$.
+
+Apply this to $Q=F'$, whose largest coefficient is at least $L$. On the
+complement of $|F'|\leq\tau$, subdivide at the roots of $F'-\tau$, $F'+\tau$
+and $F''$. A nonzero polynomial has at most its degree many roots; if $F''$
+is identically zero it creates no subdivision. There are at most $3m+2$
+intervals, and on each $F'$ has fixed sign, magnitude greater than $\tau$,
+and is monotone. Integration by parts there gives boundary terms bounded
+by $2\|a\|_\infty/(2\pi\tau)$ and integral terms bounded by
+\[
+ (2\pi\tau)^{-1}\int|a'|
+   +(2\pi)^{-1}\|a\|_\infty\int |F''|/|F'|^2.
+\]
+The last integral is at most $2/\tau$, since $1/F'$ is monotone on that
+interval. Adding the intervals and the sublevel set bounds the original
+integral by
+$C(\|a\|_\infty+\int|a'|)
+[(\tau/L)^{1/(m-1)}+\tau^{-1}]$.
+Set $\tau=L^{1/m}$. Both powers are $L^{-1/m}$.
+For a box apply this proved one-dimensional inequality on each line and
+integrate its bound over the other coordinates by Fubini.
+\end{proof}
+
+\begin{lemma}[Radial Fourier estimates]\label{lem:radialFourier}
+\bp{radial\_oscillatory\_fourier\_square}
+Define
+\[
+ \Psi(t,\eta)=\int_E\ee{tP(z)+z\cdot\eta}K(z)\psi(z)\,dz,
+ \qquad
+ \Phi_{j,\mu}(\xi)=\widehat{\ee{\mu P}K_j}(\xi)
+                  =\Psi(\mu2^{Dj},2^j\xi).
+\]
+For $|t|\leq2$, both $\Psi(t,\eta)$ and $\partial_t\Psi(t,\eta)$ are bounded
+by $C_A\min(|\eta|,|\eta|^{-A})$ for every fixed $A>0$.
+For $|t|\geq1$ there are fixed $0<c<C$ such that each of these two functions
+has the following bounds:
+\begin{equation}\label{eq:stationaryregions}
+ \begin{cases}
+ C_A|\eta|\,|t|^{-A},& |\eta|\leq c|t|,\\
+ C|t|^{-n/2},& c|t|\leq|\eta|\leq C|t|,\\
+ C_A|\eta|^{-A},& |\eta|\geq C|t|.
+ \end{cases}
+\end{equation}
+Consequently, for $\sigma\in\{-1,1\}$, $u\in[1,2]$, and any finite subset
+of integers $j$,
+\begin{align}
+ \sup_\xi\sum_j|\Phi_{j,\sigma u2^{\ell-Dj}}(\xi)|^2
+ &\leq C\begin{cases}2^{-n\ell}&\ell\geq0,\\1&\ell<0,\end{cases}\label{eq:radialsquare}\\
+ \sup_\xi\sum_j|\partial_u\Phi_{j,\sigma u2^{\ell-Dj}}(\xi)|^2
+ &\leq C\begin{cases}2^{(2-n)\ell}&\ell\geq0,\\2^{2\ell}&\ell<0.\end{cases}\label{eq:radialsquarederiv}
+\end{align}
+\end{lemma}
+\begin{proof}
+The change of variables $x=2^jz$, homogeneity of $K$ and $P$, gives the
+formula for $\Phi$. Equation~\eqref{eq:radialcancel} gives
+$\Psi(t,0)=\partial_t\Psi(t,0)=0$. Differentiating in $t$ merely changes the
+fixed amplitude to $2\pi iP(z)K(z)\psi(z)$; its support and smoothness bounds
+are unchanged. We prove all subsequent estimates for either amplitude.
+
+We first record the integration-by-parts mechanism. On a compact support
+where $|\nabla F|\geq L$ and derivatives of $F$ of the orders used are at most
+$C_aL$, set $b=\nabla F/|\nabla F|^2$. The quotient and product rules give
+$|\partial^a b|\leq C_a/L$. Since
+$b\cdot\nabla\ee{F}=2\pi i\ee{F}$, integration by parts replaces an amplitude
+$a$ by $-(2\pi i)^{-1}\operatorname{div}(ba)$. Repeating $N$ times gives an
+integral bounded by $C_NL^{-N}$ times finitely many derivatives of $a$.
+The derivative estimate for $b$ follows inductively: each differentiated
+inverse power of $|\nabla F|^2$ contributes a product of derivatives of $F$
+in its numerator and a compensating additional inverse power in its
+denominator. The assumed upper and lower bounds leave one factor $L^{-1}$.
+All boundary terms vanish because the amplitude is compactly supported.
+
+On $1/2\leq|z|\leq2$, $|\nabla P(z)|=D|z|^{D-1}$ is bounded above and away
+from zero. If $|\eta|\leq c|t|$ with sufficiently small $c$, the gradient of
+$tP(z)+\eta\cdot z$ has magnitude at least a constant times $|t|$.
+The preceding mechanism bounds the integral and its first $\eta$ derivatives
+by $C_A|t|^{-A}$. Integrating those first derivatives along the segment from
+$0$ to $\eta$, and using the zero value at $\eta=0$, gives the first line
+of \eqref{eq:stationaryregions}. If $|\eta|\geq C|t|$ with sufficiently large
+$C$, the gradient has magnitude at least $|\eta|/2$ and all its derivatives
+are $O(|\eta|)$, giving the third line. For bounded $t$, this also gives
+arbitrary decay at large $|\eta|$; the zero value and bounded first derivatives
+give the stated $O(|\eta|)$ bound at bounded $|\eta|$.
+
+For the middle region write the phase as
+$|t|F(z)$, where $F(z)=\sgn(t)P(z)+v\cdot z$ and $v=\eta/|t|$ ranges over a
+fixed compact annulus. The equation $\nabla F(z)=0$ has exactly one solution
+$z_0$: its direction is prescribed by $v$, and its radius is
+$(|v|/D)^{1/(D-1)}$. Thus $|z_0|$ is bounded above and away from zero.
+For positive radii $r,s$ in a fixed compact subinterval of $(0,\infty)$,
+\begin{align*}
+ |r^{D-1}\theta-s^{D-1}\omega|^2
+  &=(r^{D-1}-s^{D-1})^2
+                 +r^{D-1}s^{D-1}|\theta-\omega|^2,\\
+ |r\theta-s\omega|^2
+  &=(r-s)^2+rs|\theta-\omega|^2.
+\end{align*}
+The mean-value theorem for $r^{D-1}$ compares the two right sides from below.
+It follows that $|\nabla F(z)|\geq c_1|z-z_0|$ on the amplitude's support.
+On a shell $|z-z_0|\asymp\rho$ the vector
+$b=\nabla F/|\nabla F|^2$ satisfies
+$|\partial^a b|\leq C_a\rho^{-1-|a|}$ by the quotient rule just used.
+
+Put $T=|t|$ and $\rho_0=T^{-1/2}$. A smooth cutoff to
+$|z-z_0|\leq2\rho_0$ has integral bounded by $C\rho_0^n$ in absolute value.
+Use differences of concentric smooth cutoffs to partition the remainder
+into shells with radii $\rho=2^k\rho_0$ up to a fixed constant. Their
+amplitudes have derivatives of order $a$ bounded by $C_a\rho^{-|a|}$.
+After $N$ integrations by parts with the above vector field, the amplitude
+is bounded by $C_NT^{-N}\rho^{-2N}$: one divergence differentiates either
+the amplitude or $b$, contributing at most two additional inverse powers of
+$\rho$, and this proves the bound by induction on $N$. The shell volume is
+at most $C\rho^n$. Choose an integer $N>n/2$. The shell bounds sum to
+\[
+ C\sum_{k\geq0}T^{-N}(2^kT^{-1/2})^{n-2N}
+ \leq CT^{-n/2}.
+\]
+Together with the inner ball this proves the middle estimate.
+
+For the square estimates put $\eta_j=2^j\xi$ and $T=2^\ell$. At $\xi=0$
+every term is zero. For $\xi\ne0$ these radii form a geometric progression.
+When $T\geq1$, the indices $cT\leq|\eta_j|\leq2CT$ number at most a fixed
+constant, and each squared value is $O(T^{-n})$. Below this interval, the
+first line of \eqref{eq:stationaryregions} gives
+$C T^{-2A}\sum |\eta_j|^2\leq CT^{2-2A}$. Above it the third line gives
+$C\sum |\eta_j|^{-2A}\leq CT^{-2A}$. Choose $A\geq n/2+1$.
+For $T<1$ use the bounded-$t$ estimate and split the geometric progression
+at radius one. This proves \eqref{eq:radialsquare}, also for $\partial_t\Psi$.
+Finally differentiation in $u$ multiplies that function by $\sigma2^\ell$;
+squaring this factor gives \eqref{eq:radialsquarederiv}.
+\end{proof}
+
+\begin{lemma}[Continuous annular maximal decay]\label{lem:continuousband}
+\bp{continuous\_annular\_maximal\_decay}
+For $T\geq1$ define
+\[
+ \mathfrak H_T f(x)=
+ \sup_{j\in\Z,\ T\leq|\mu|2^{Dj}\leq2T}
+       |(\ee{\mu P}K_j)*f(x)|.
+\]
+For every $1<p<\infty$ there is $\sigma_p>0$ such that
+$\|\mathfrak H_Tf\|_{L^p(E)}\leq C_pT^{-\sigma_p}\|f\|_p$.
+One may take $\sigma_p=(2D)^{-1}\min(1/p,1/p')$.
+\end{lemma}
+\begin{proof}
+The bound $|K_j|\leq C2^{-jn}\ind_{|x|\leq2^{j+1}}$ gives
+$\mathfrak H_T f\leq C\bM f$, including scales $2^j<1$ on $E$.
+It remains to obtain decay on $L^2$. Linearize a finite family, writing the
+selected scale and parameter at $x$ as $R_x=2^{j(x)}$ and $\mu_x$.
+The $TT^*$ kernel is
+\[
+ H(x,y)=\int_E\ee{\mu_xP(x-z)-\mu_yP(y-z)}
+                  K_{j(x)}(x-z)\overline{K_{j(y)}(y-z)}\,dz.
+\]
+Put $R=\max(R_x,R_y)$, $r=\min(R_x,R_y)$, $h=y-x$.
+Its support requires $|h|\leq2R+2r\leq4R$, and the elementary bound is
+$|H(x,y)|\leq CR^{-n}$, obtained by integrating the smaller annular support.
+
+If $R/r\geq4$, center coordinates at the smaller-scale center and divide
+by $r$. The integration is then over a fixed box. The coefficient of a
+pure power $z_i^D$ in the normalized phase has magnitude at least
+$T-2T(r/R)^D\geq T/2$. The normalized amplitude and its variation along
+each coordinate are at most $CR^{-n}$, by \eqref{eq:dyadicbounds} and
+$r/R\leq1$. Lemma~\ref{lem:oscint} gives
+$|H(x,y)|\leq CR^{-n}T^{-1/D}$.
+
+Suppose $R/r<4$. By interchanging $x,y$ and conjugating when necessary,
+assume $R_y=r$. Use the variable $w=(x-z)/r$. The phase is
+$\mu_xr^DP(w)-\mu_yr^DP(w+h/r)$.
+Its coefficient of $w_i^{D-1}$ is $-D\mu_y r^{D-1}h_i$; this follows by
+expanding $(\sum w_i^2)^d$, and no other coordinate enters that coefficient.
+If $|h|\geq rT^{-1/2}$, choose $i$ with $|h_i|\geq|h|/\sqrt n$.
+That coefficient has magnitude at least $cT^{1/2}$, and the amplitude again
+has uniformly bounded support and variation after division by $R^{-n}$.
+Lemma~\ref{lem:oscint} gives
+$|H(x,y)|\leq CR^{-n}T^{-1/(2D)}$.
+For the remaining pairs retain the elementary bound, supported where
+$|h|\leq RT^{-1/2}$.
+
+We have proved the pointwise upper bound
+\[
+ |H(x,y)|\leq C T^{-1/(2D)}R^{-n}\ind_{|x-y|\leq4R}
+       +C R^{-n}\ind_{|x-y|\leq RT^{-1/2}}.
+\]
+In the bilinear integral against $|g(x)g(y)|$, split into $R_x\geq R_y$ and
+its complement. In the first part $R=R_x$. Integrating in $y$ and dropping
+the scale restriction bounds the first term by
+$CT^{-1/(2D)}\int |g|\bM g$, and the second by
+$CT^{-n/2}\int|g|\bM g$, because its ball has relative volume $T^{-n/2}$.
+In the other part interchange $x,y$ and obtain exactly the same bounds.
+H\"older and the already proved $L^2$ maximal-function bound yield
+$\|TT^*\|_{2\to2}\leq CT^{-1/(2D)}$. Lemma~\ref{lem:ttstar} gives
+$\|\mathfrak H_T\|_{2\to2}\leq CT^{-1/(4D)}$ for finite families.
+
+Interpolate this bound with weak $(1,1)$ domination by $\bM$ for $p<2$,
+and with the $L^\infty$ bound for $p>2$. The exponents from
+Lemma~\ref{lem:interpolation} are precisely the displayed $\sigma_p$.
+For a Schwartz input, convolution is continuous in $\mu$ on each compact
+parameter interval by dominated convergence. A countable dense parameter
+set on each scale therefore gives the full supremum. Increasing finite
+maxima, monotone convergence, and density complete the assertion.
+\end{proof}
+
+\section{Sampling and finite Fourier bookkeeping}\label{sec:sampling}
+\begin{lemma}[Periodization, modulation, and products]\label{lem:fourierbook}
+\bp{periodization\_and\_spectral\_orthogonality}
+For an integrable compactly supported Euclidean symbol $m$, let
+$m_{\mathrm{per}}(\xi)=\sum_{k\in\Z^n}m(\xi-k)$. Its $y$th inverse Fourier
+coefficient is $\check m(y)$ for $y\in G$. For smooth compactly supported
+$m$ this is a rapidly decreasing lattice sequence. If lattice sequences
+$u_i$ are rapidly decreasing and their Fourier supports are $A_i\subset\T^n$,
+the Fourier support of their product is contained in $A_1+\cdots+A_l$.
+In particular a sum of their product over $G$ is zero when that Minkowski
+sum excludes zero. Two such products with disjoint Fourier supports are
+orthogonal in $\ell^2$.
+\end{lemma}
+\begin{proof}
+Partition $E$ into translates of a fundamental cube and use
+$\ee{-y\cdot k}=1$ to compute the inverse coefficient of $m_{\mathrm{per}}$.
+Absolute integrability justifies the partition. Repeated integration by
+parts proves rapid decrease when $m$ is smooth. For two rapidly decreasing
+sequences, insert Fourier inversion for one factor and interchange an
+absolutely convergent sum and integral; this gives
+$\widehat{uv}=\widehat u*_{\T^n}\widehat v$. Induction proves the product
+statement. Its value at zero is the sum of the product over $G$.
+For orthogonality use Parseval and the disjoint Fourier supports.
+Complex conjugation reflects a Fourier support through zero; thus the same
+argument applies to products containing conjugated factors.
+\end{proof}
+
+\begin{lemma}[Sampling, also for a maximal family]\label{lem:sampling}
+\bp{euclidean\_to\_lattice\_sampling}
+Let $1<p<\infty$. Let $m_u$ be finitely many bounded symbols supported in
+$[-1/8,1/8]^n$. Suppose
+\[
+ \left\|\max_u|m_u(D)F|\right\|_{L^p(E)}\leq A\|F\|_{L^p(E)}.
+\]
+Their periodizations satisfy the corresponding $\ell^p(G)$ estimate with
+constant $C_{n,p}A$. If a single $m$ is supported in
+$[-1/(8q),1/(8q)]^n$, then
+\[
+ \Delta_qm(\xi)=\sum_{\beta\in(q^{-1}\Z/\Z)^n}m_{\mathrm{per}}(\xi-\beta)
+\]
+has $\ell^p$ multiplier norm at most $C_{n,p}$ times the Euclidean $L^p$
+multiplier norm of $m$, independently of $q\geq1$.
+\end{lemma}
+\begin{proof}
+Choose a Schwartz function $v$ whose Fourier transform equals one on
+$[-1/8,1/8]^n$ and is supported in $[-1/4,1/4]^n$.
+For a finite-support lattice function define
+$F(x)=\sum_{z\in G}f(z)v(x-z)$. The sum
+$\sup_x\sum_z|v(x-z)|$ is bounded: restrict $x$ to a fundamental cube and
+sum its Schwartz tail by shells. Weighted H\"older gives
+\[
+ |F(x)|^p\leq\left(\sum_z|v(x-z)|\right)^{p-1}
+                    \sum_z|v(x-z)||f(z)|^p.
+\]
+Integrate and use translation invariance to obtain
+$\|F\|_{L^p}\leq C_p\|f\|_{\ell^p}$.
+Write $H_u=m_u(D)F$. On the support of $m_u$,
+$\widehat F(\xi)=\sum_z f(z)\ee{z\cdot\xi}$, so Fourier inversion gives
+$H_u(z)=m_{u,\mathrm{per}}(D)f(z)$ at every integer $z$.
+These point values are defined by the integrable inverse Fourier integral.
+
+Each $H_u$ has Fourier support in $[-1/8,1/8]^n$ and satisfies $H_u=v*H_u$.
+This equality first holds in $L^2$ by Fourier multiplication. Both sides are
+continuous: the inverse Fourier integral gives continuity of the first, and
+H\"older with translation continuity of the Schwartz function $v$ gives it
+for the second. Hence equality holds at every point. Thus
+\[
+ \max_u|H_u(z)|\leq\int_E|v(z-x)|\max_u|H_u(x)|\,dx.
+\]
+Weighted H\"older, followed by summation in $z$, bounds this sampling map
+$L^p(E)\to\ell^p(G)$ uniformly, using
+$\int|v|<\infty$ and $\sup_x\sum_z|v(z-x)|<\infty$.
+This proves the first assertion. The same proof is valid by approximation
+for bounded measurable symbols; their products with $\widehat F$ are
+integrable on the fixed compact support.
+
+The inverse kernel of $\Delta_qm$ is
+$q^n\ind_{q\mid y_i\ (1\leq i\leq n)}\check m(y)$, by a finite geometric
+sum in every coordinate. Split the input into its $q^n$ residue classes.
+On the class $r+qG$, identify $r+qz$ with $z$. The kernel becomes
+$q^n\check m(qz)$, the inverse transform of $m(\xi/q)$ sampled on $G$.
+That symbol is supported in $[-1/8,1/8]^n$. Its Euclidean $L^p$ multiplier
+norm is the same as that of $m$: apply the change of variables $x\mapsto qx$
+to input and output, whose norm factors cancel. Apply the first assertion
+on each residue class and add their $p$th powers.
+\end{proof}
+
+\section{A self-contained rational-frequency multiplier lemma}\label{sec:IW}
+The result in this section is the rational-frequency transference estimate
+needed by the proof. Its combinatorial and analytic ingredients are proved
+here. In particular no Ionescu--Wainger theorem is an input.
+
+\begin{definition}[Pairwise coprime blocks]\label{def:blocks}
+Fix integers $k\geq1$, $r\geq2$, and a finite set $S$ of pairwise coprime
+integers greater than one. Put $q_* =\max(2,\max S)$ and
+$Q_A=\prod_{q\in A}q$ for $A\subset S$, with $Q_\varnothing=1$.
+Let $T[q]=(q^{-1}\Z/\Z)^n$. The map
+$\prod_{q\in A}T[q]\to T[Q_A]$ that adds its coordinates is a bijection.
+Indeed a zero sum, multiplied by $Q_A/q$, forces its $q$th component to be
+zero by B\'ezout's identity; injectivity and the equal finite cardinalities
+$Q_A^n$ then give bijectivity.
+
+Let $\Sigma_A$ consist of the sums whose $q$th component is nonzero for every
+$q\in A$ and is zero outside $A$. Put
+\[
+ \Sigma_{\leq k}=\bigcup_{|A|\leq k}\Sigma_A,
+ \qquad
+ \Sigma^{A_0}=\bigcup_{\substack{B\subset S\setminus A_0\\|B|\leq k-|A_0|}}
+                         \Sigma_B.
+\]
+These unions are disjoint. For a finite set $\Lambda\subset\T^n$ write
+$T_{m;\Lambda}$ for the lattice multiplier
+$\sum_{\beta\in\Lambda}m_{\mathrm{per}}(\xi-\beta)$.
+All frequency radii in this section satisfy
+\begin{equation}\label{eq:epsseparation}
+ 0<\varepsilon\leq (100r q_*^{2rk})^{-1}.
+\end{equation}
+Thus a nonzero sum or difference of at most $2r$ centers from
+$\Sigma_{\leq k}$ cannot be canceled by perturbations of size at most
+$2\varepsilon$ in each summand. To see this, its denominator divides a product
+of at most $2rk$ blocks, and a nonzero coordinate has distance at least
+$q_*^{-2rk}$ from an integer, greater than $4r\varepsilon$.
+\end{definition}
+
+\begin{lemma}[Superorthogonality from a singleton index]\label{lem:superorth}
+\bp{singleton\_superorthogonality}
+Let $f_i$ be finitely many Hilbert-space-valued functions. Suppose every
+integral
+$\int\prod_{j=1}^r\langle f_{i_{2j-1}},f_{i_{2j}}\rangle$ vanishes whenever
+one index occurs exactly once. Then
+\[
+ \left\|\sum_i f_i\right\|_{2r}
+ \leq C_r\left\|\left(\sum_i\|f_i\|^2\right)^{1/2}\right\|_{2r}.
+\]
+If functions $f_A$ are indexed by subsets of a finite set of size at most $k$,
+and the analogous vanishing holds whenever one underlying element occurs
+in exactly one of $A_1,\ldots,A_{2r}$, then the same inequality holds with
+constant $C_{k,r}$ and square sum over $A$.
+\end{lemma}
+\begin{proof}
+Expand the $2r$th moment. Terms whose index partition contains a singleton
+are zero. There are at most $(2r)^{2r}$ partitions of the $2r$ positions.
+For a surviving partition each block has size $m\geq2$. After taking absolute
+values and dropping the requirement that different blocks have different
+indices, its pointwise sum is at most a product of factors
+$\sum_i\|f_i\|^m$. Each such factor is at most
+$(\sum_i\|f_i\|^2)^{m/2}$, by the elementary power inequality proved in
+Lemma~\ref{lem:khintchine}. The product is the $r$th power of the square sum.
+Integrating and taking a $2r$th root proves the first assertion.
+
+First restrict the subset family to sets of one cardinality $l\leq k$.
+Color the underlying finite set independently with $l$ colors. A fixed
+$l$-element set is transversal (one element of each color) with probability
+$l!/l^l$. Therefore the sum of all $f_A$ is $l^l/l!$ times the average of the
+sums over transversal sets. Fix a coloring. Write those functions as an
+$l$-coordinate array indexed by one element from each color class. Apply the
+first assertion to the first coordinate, treating sums in the other
+coordinates as its functions. The required vanishing holds because a
+singleton element of that color cannot appear in any other color, even after
+expanding those sums. For the second coordinate use vectors indexed by the
+first coordinate. Expanding their inner products still leaves a singleton
+element of the second color in exactly one factor, so the same vanishing
+holds. Continue through all $l$ coordinates. The resulting bound is the
+$L^{2r}$ norm of the full square sum, with constant $C_r^l$.
+Minkowski for the finite color average proves the claim for this cardinality.
+For $l=0$ there is only the empty set and no estimate is needed.
+Finally sum the $k+1$ cardinalities; each of their square functions is
+pointwise at most the square function of the whole family. The triangle
+inequality gives the constant $C_{k,r}$.
+\end{proof}
+
+\begin{lemma}[An elementary weighted sunflower inequality]\label{lem:sunflower}
+\bp{weighted\_sunflower}
+For nonnegative weights $w_A$ on subsets $A$ of a finite set with $|A|\leq k$,
+\begin{equation}\label{eq:weightedflower}
+ \left(\sum_A w_A\right)^r
+ \leq C_{k,r}\sum_{A_0}
+ \sum_{\substack{A_i\subset S\setminus A_0\ (1\leq i\leq r)\\
+                   A_i\text{ pairwise disjoint},\ |A_0\cup A_i|\leq k}}
+                  \prod_{i=1}^r w_{A_0\cup A_i}.
+\end{equation}
+Empty petals are allowed. Thus a repeated set in a sunflower tuple has that
+set as core and all its repeated petals empty.
+\end{lemma}
+\begin{proof}
+A family of distinct $l$-element sets with more than $l!(r-1)^l$ members
+contains $r$ distinct sets with pairwise intersections all equal. Prove this
+by induction on $l$. The case $l=0$ is vacuous since there is only one empty
+set. Take a maximal disjoint subfamily. If it has at least $r$ members, they
+are the required sets with empty common intersection. Otherwise its union
+has at most $l(r-1)$ elements and meets every set in the family. One element
+therefore belongs to more than $(l-1)!(r-1)^{l-1}$ sets. Remove it from those
+sets, use the induction hypothesis, and restore it to their common
+intersection. This proves the assertion. Consequently any family of
+\[
+ M=1+\sum_{l=0}^k l!(r-1)^l
+\]
+distinct sets of size at most $k$ contains such an $r$-tuple.
+
+If $W=\sum w_A=0$ there is nothing to prove. Otherwise choose sets independently
+with probabilities $w_A/W$. If an atom has probability at least
+$1/(4M^2)$, the event that the first $r$ choices equal that atom has probability
+at least $(4M^2)^{-r}$ and is an allowed sunflower tuple. If every atom is
+smaller, the probability of a collision among $M$ choices is at most
+$\binom M2\sum_A(w_A/W)^2\leq1/8$.
+With probability at least $7/8$ those choices are distinct and contain an
+$r$-tuple of the kind just proved. A union bound over the at most $M^r$
+choices of positions shows that the probability that the first $r$ choices
+form a sunflower is at least $(7/8)M^{-r}$. In both cases this probability
+is at least $(4M^2)^{-r}$.
+A tuple with equal pairwise intersections has a uniquely determined core
+$A_0$ and disjoint petals $A_i$; conversely such petals give such a tuple.
+Multiply the probability inequality by $W^r$. This is
+\eqref{eq:weightedflower} with $C_{k,r}=(4M^2)^r$.
+\end{proof}
+
+\begin{lemma}[Two Fourier orthogonality statements]\label{lem:blockorthog}
+\bp{block\_denominator\_and\_numerator\_orthogonality}
+For each $\alpha\in\Sigma_{\leq k}$ let $f_\alpha$ be rapidly decreasing on
+$G$ with Fourier support in $\alpha+[-\varepsilon,\varepsilon]^n$.
+Put $f_A=\sum_{\alpha\in\Sigma_A}f_\alpha$ and
+$f_{A_0,\alpha}=\sum_{\beta\in\Sigma_{A_0}}f_{\alpha+\beta}$ for
+$\alpha\in\Sigma^{A_0}$.
+First, the functions $f_A$ satisfy the subset vanishing condition of
+Lemma~\ref{lem:superorth}. Second, for a fixed core $A_0$ and disjoint petals
+$A_1,\ldots,A_r\subset S\setminus A_0$, the functions
+\[
+ \prod_{i=1}^r f_{A_0,\alpha_i},\qquad \alpha_i\in\Sigma_{A_i},
+\]
+have pairwise disjoint Fourier supports as the tuple $(\alpha_1,\ldots,\alpha_r)$
+varies, and are therefore pairwise orthogonal in $\ell^2$.
+\end{lemma}
+\begin{proof}
+Expand a mixed product in the first assertion into individual centers. If a
+block $q$ occurs in exactly one of its sets, the sum of its signed rational
+centers has a nonzero $q$-component: the unique contributing center has a
+nonzero component there. The direct-product decomposition in
+Definition~\ref{def:blocks} prevents cancellation by other blocks.
+The separation inequality \eqref{eq:epsseparation} prevents the small
+frequency perturbations from reaching zero. The sum of the product is zero
+by Lemma~\ref{lem:fourierbook}.
+
+For the second assertion, a Fourier support of the displayed product lies
+in a neighborhood of a sum of its petal centers and $r$ centers supported
+on the core. For two different tuples, a component belonging to one petal
+has a nonzero difference, since each nonempty petal is disjoint from every
+other petal and from the core. It cannot be canceled by the other components.
+Empty petals have only the zero choice and cannot distinguish two tuples.
+Again \eqref{eq:epsseparation} separates the neighborhoods, now of width
+$r\varepsilon$ on each side. Parseval gives the orthogonality.
+\end{proof}
+
+\begin{lemma}[A norm description]\label{lem:normdescription}
+\bp{rational\_frequency\_norm\_description}
+With the notation of Lemma~\ref{lem:blockorthog},
+\begin{equation}\label{eq:normdescription}
+ \left\|\sum_{\alpha\in\Sigma_{\leq k}}f_\alpha\right\|_{2r}^{2r}
+ \leq C_{k,r}\sum_{|A_0|\leq k}
+       \left\|(f_{A_0,\alpha})_{\alpha\in\Sigma^{A_0}}
+                                      \right\|_{\ell^{2r}(G;\ell^2)}^{2r}.
+\end{equation}
+\end{lemma}
+\begin{proof}
+The first assertion of Lemma~\ref{lem:blockorthog} and
+Lemma~\ref{lem:superorth} bound the left side by
+\[ C\sum_x\left(\sum_A|f_A(x)|^2\right)^r.\]
+At each $x$ apply Lemma~\ref{lem:sunflower} with $w_A=|f_A(x)|^2$ and sum in
+$x$. Each term becomes
+\[\left\|\prod_{i=1}^r f_{A_0\cup A_i}\right\|_2^2.\]
+The direct block decomposition gives
+$f_{A_0\cup A_i}=\sum_{\alpha_i\in\Sigma_{A_i}}f_{A_0,\alpha_i}$.
+Expand this product. By the second orthogonality statement its squared norm
+is exactly
+\[\sum_{\alpha_i\in\Sigma_{A_i}}\left\|\prod_i f_{A_0,\alpha_i}\right\|_2^2.\]
+All resulting quantities are nonnegative. Drop the restriction that the
+petals be pairwise disjoint, retaining only $|A_0\cup A_i|\leq k$.
+Each $\alpha\in\Sigma^{A_0}$ has a unique petal support, so the enlarged sum
+is exactly
+$\sum_x(\sum_{\alpha\in\Sigma^{A_0}}|f_{A_0,\alpha}(x)|^2)^r$.
+Summing in the core proves \eqref{eq:normdescription}.
+\end{proof}
+
+\begin{lemma}[Companion projections]\label{lem:companion}
+\bp{companion\_projection\_estimate}
+Choose a fixed smooth product cutoff $\theta$, equal to one on $[-1,1]^n$
+and zero outside $[-2,2]^n$, and put $\theta_\varepsilon(\xi)=\theta(\xi/\varepsilon)$.
+For $2\leq t\leq\infty$,
+\begin{equation}\label{eq:companion}
+ \left\|(T_{\theta_\varepsilon;\alpha+\Sigma_{A_0}}f)
+                  _{A_0,\alpha\in\Sigma^{A_0}}
+       \right\|_{\ell^t(G\times\{A_0:|A_0|\leq k\};\ell^2_\alpha)}
+ \leq C_{n,k,t}\|f\|_{\ell^t(G)}.
+\end{equation}
+The outside norm at $t=\infty$ is the supremum in $x,A_0$ of the
+$\ell^2_\alpha$ norm.
+\end{lemma}
+\begin{proof}
+At $t=2$, the bumps at different centers of $\Sigma_{\leq k}$ are disjoint.
+A center with support $A$ occurs in the coset belonging to $(A_0,\alpha)$
+exactly when $A_0\subset A$, with $\alpha$ then uniquely determined.
+There are at most $2^k$ such cores. Parseval therefore proves the estimate.
+
+For $t=\infty$ fix a core $A_0$. Inclusion--exclusion on which of its block
+components are zero gives
+\begin{equation}\label{eq:inclusionexclusion}
+ T_{m;\Sigma_{A_0}}=
+ \sum_{B\subset A_0}(-1)^{|A_0|-|B|}T_{m;T[Q_B]}.
+\end{equation}
+It suffices to prove the uniform $\ell^2_\alpha$ estimate for one full-grid
+coset $\alpha+T[Q]$, where $Q=Q_B$; the triangle inequality then costs at most
+$2^k$. Its kernel is
+\[
+ h_\alpha(y)=Q^n\ind_{y\in QG}\check\theta_\varepsilon(y)\ee{-\alpha\cdot y}.
+\]
+The cosets for different $\alpha\in\Sigma^{A_0}$ are disjoint by the direct
+block decomposition. Their neighborhoods of radius $2\varepsilon$ are
+disjoint by \eqref{eq:epsseparation}. Put
+$w(y)=\prod_{i=1}^n(1+\varepsilon^2y_i^2)$.
+Multiplication of $h_\alpha$ by this polynomial in $y$ differentiates its
+Fourier bumps; it does not enlarge their supports. Thus the sequences
+$w h_\alpha$ are pairwise orthogonal in $\ell^2$.
+
+Here are the two numerical bounds used in Cauchy--Schwarz:
+\begin{align*}
+ \sum_{y\in QG}w(y)^{-2}&\leq C_n(\varepsilon Q)^{-n},\\
+ \|w h_\alpha\|_2^2&\leq C_n\varepsilon^nQ^n.
+\end{align*}
+For the first, factor the sum into one-dimensional sums and compare
+$\sum_{l\in\Z}(1+(\varepsilon Ql)^2)^{-2}$ with its integral plus its value
+at zero. Since $\varepsilon Q\leq1$, the result is $C/(\varepsilon Q)$.
+For the second, $\check\theta_\varepsilon(y)=\varepsilon^n\check\theta(\varepsilon y)$.
+The product $w(y)\check\theta(\varepsilon y)$ has arbitrary fixed polynomial
+decay in $\varepsilon y$. Its squared sum on $QG$ is at most
+$C(\varepsilon Q)^{-n}$ by the same comparison, and the prefactor is
+$Q^{2n}\varepsilon^{2n}$. This gives the second bound.
+
+For coefficients $c_\alpha$ of squared sum one, Cauchy--Schwarz on $QG$ and
+orthogonality now give
+\[
+ \sum_y\left|\sum_\alpha c_\alpha h_\alpha(y)\right|
+ \leq\left(\sum_{y\in QG}w^{-2}\right)^{1/2}
+      \left\|\sum_\alpha c_\alpha w h_\alpha\right\|_2
+ \leq C_n.
+\]
+Pair this kernel with a translate of $f$ and dualize the finite
+$\ell^2_\alpha$ norm. This proves the $t=\infty$ bound uniformly in the core.
+The map in \eqref{eq:companion} is a linear map with pointwise Hilbert norm,
+from measure space $G$ to the product measure space of $x$ and cores.
+Lemma~\ref{lem:interpolation} between $2$ and $\infty$ proves every remaining
+$t$. It applies with these two different measure spaces because its proof
+only uses the input splitting and the output distribution function.
+\end{proof}
+
+\begin{theorem}[Rational-frequency transference]\label{thm:IW}
+\bp{coprime\_block\_multiplier\_transference}
+Assume \eqref{eq:epsseparation}. Let $m$ be a bounded measurable Euclidean
+symbol supported in $[-\varepsilon/2,\varepsilon/2]^n$, with $L^{2r}(E)$
+multiplier norm at most $A$. For $(2r)'\leq p\leq2r$,
+\[
+ \|T_{m;\Sigma_{\leq k}}f\|_{\ell^p(G)}
+       \leq C_{n,k,r,p} A\|f\|_{\ell^p(G)}.
+\]
+\end{theorem}
+\begin{proof}
+First take smooth $m$ supported in $[-\varepsilon,\varepsilon]^n$ and
+finite-support $f$. Put $f_\alpha=T_{m;\{\alpha\}}f$.
+These are rapidly decreasing and have the Fourier supports required by
+Lemma~\ref{lem:normdescription}. For a fixed core and outside component,
+\[
+ f_{A_0,\alpha}=T_{m;\alpha+\Sigma_{A_0}}f
+ =T_{m;\alpha+\Sigma_{A_0}}
+               T_{\theta_\varepsilon;\alpha+\Sigma_{A_0}}f.
+\]
+The factorization follows by multiplying symbols: different center bumps
+are disjoint and $\theta_\varepsilon=1$ on the support of $m$.
+By \eqref{eq:inclusionexclusion}, the operator $T_{m;\Sigma_{A_0}}$ is a sum
+of at most $2^k$ full-grid operators. Their $\ell^{2r}$ norms are at most
+$C A$ by Lemma~\ref{lem:sampling}, since
+$\varepsilon\leq1/(8Q_B)$ follows from \eqref{eq:epsseparation}.
+Thus its norm is at most $C2^kA$.
+
+Modulation gives
+$T_{m;\alpha+\Sigma_{A_0}}=M_{-\alpha}T_{m;\Sigma_{A_0}}M_\alpha$.
+Apply the vector extension in Lemma~\ref{lem:khintchine} to this one common
+operator and the finite list of inputs
+$M_\alpha T_{\theta_\varepsilon;\alpha+\Sigma_{A_0}}f$.
+Input and output modulations preserve their pointwise square norms.
+Then sum the $2r$th powers over cores. Lemma~\ref{lem:companion} and
+\eqref{eq:normdescription} give
+$\|T_{m;\Sigma_{\leq k}}f\|_{2r}\leq C A\|f\|_{2r}$.
+
+Complex conjugation followed by reflection, $f(x)\mapsto\overline{f(-x)}$,
+is an isometry and conjugates the multiplier $m$ to $\overline m$.
+Therefore their Euclidean $L^{2r}$ multiplier norms are equal.
+The adjoint of $T_{m;\Sigma_{\leq k}}$ has the conjugate symbol and is
+$T_{\overline m;\Sigma_{\leq k}}$. Apply the proved $2r$ bound to it and use
+dual testing to obtain the bound at $(2r)'$. Interpolation gives the
+intermediate exponents.
+
+Finally consider the measurable symbol in the statement. Convolve it in
+frequency with a nonnegative smooth approximate identity of integral one,
+whose support radius tends to zero and is less than $\varepsilon/2$.
+The resulting $m_l$ are smooth and supported in
+$[-\varepsilon,\varepsilon]^n$. Their Euclidean multiplier norms are at
+most $A$: a frequency translation is conjugation by a modulation, and
+Minkowski bounds their average of conjugated operators. The functions $m_l$
+converge to $m$ in $L^2(E)$. To justify this without a differentiation
+ theorem, approximate the compactly supported $L^2$ function $m$ by a
+Schwartz function, use Young on the approximation error, and use uniform
+continuity and a tail bound on the Schwartz function.
+For finite-support $f$ its torus Fourier transform is bounded, and there
+are finitely many rational centers. Thus the corresponding lattice outputs
+converge in $\ell^2$ by Parseval. An almost-everywhere subsequence and Fatou
+transfer the uniform $\ell^p$ bounds. Finite-support density finishes the
+proof.
+\end{proof}
+
+\begin{construction}[A good set containing every small denominator]\label{con:goodset}
+Fix $\rho>0$. For each integer $N\geq2$, let $N_0=\lceil N^{\rho/4}\rceil$
+and put
+\[
+ Q_0=\prod_{\substack{p\leq N_0\\p\text{ prime}}}
+                p^{\lfloor\log_p N\rfloor}.
+\]
+Omit factors with exponent zero. Take as blocks the integer $Q_0$ when it
+is greater than one and, for every prime $N_0<p\leq N$, the integer
+$p^{\lfloor\log_p N\rfloor}$. They are pairwise coprime. Put
+$k=\lceil4/\rho\rceil+1$ and use these blocks to define
+$\mathcal U_N=\Sigma_{\leq k}$.
+Every rational point of denominator at most $N$ belongs to $\mathcal U_N$.
+Indeed the small-prime part of its denominator divides $Q_0$; its number of
+distinct prime factors exceeding $N_0\geq N^{\rho/4}$ is at most $4/\rho$,
+by multiplying those factors and comparing with $N$. Its denominator thus
+divides a product of at most $k$ blocks. The direct-product decomposition
+places its rational point in $\Sigma_A$ for a subset of those blocks.
+
+No estimate for the distribution of primes is required. There are at most
+$N_0$ small primes, and each block factor there is at most $N$. Hence
+$\log Q_0\leq N_0\log N\leq C_\rho N^{\rho/2}$. Every other block is at most
+$N$, so $q_*\leq\exp(C_\rho N^{\rho/2})$. Every center of $\mathcal U_N$ has
+denominator at most $q_*^k$. Consequently there is a constant $C_{\rho,r}$
+such that
+\[
+ \varepsilon\leq\exp(-C_{\rho,r}N^{2\rho})
+\]
+implies \eqref{eq:epsseparation} and all conclusions of
+Theorem~\ref{thm:IW}, with constants independent of $N$.
+Enlarge $C_{\rho,r}$ to include the finite small range where the displayed
+elementary power bounds need adjustment. The construction also works when
+$N_0\geq N$, in which case all denominators divide the one small-prime block.
+\end{construction}
+
+\section{Minor parameter arcs and the choice of the exponent}\label{sec:minor}
+For $j\geq1$ and $\lambda\in\T=\R/\Z$ define the finite-kernel operator
+\[
+ T_{j,\lambda}f(x)=\sum_{y\in G}\ee{\lambda P(y)}K_j(y)f(x-y).
+\]
+For a positive integer $M$ put
+\[
+ H_j=2^{\lfloor M\log_2(j+1)\rfloor},\qquad
+ w_j=(j+1)^M2^{-Dj},\qquad
+ X_j=\bigcup_{\substack{1\leq q<H_j\\0\leq a<q,\ (a,q)=1}}
+       \{\lambda:\|\lambda-a/q\|_\T\leq w_j\}.
+\]
+For $q=1$ the reduced numerator is $a=0$. A supremum over an empty set is
+zero in every nonnegative maximal expression below.
+
+\begin{lemma}[Minor-arc decay with an arbitrarily large logarithmic power]\label{lem:minorL2}
+\bp{minor\_parameter\_ttstar}
+For every $\kappa>0$ there are integers $M,j_1\geq1$ such that for $j\geq j_1$,
+\[
+ \left\|\sup_{\lambda\notin X_j}|T_{j,\lambda}f|\right\|_2
+             \leq C_\kappa j^{-\kappa}\|f\|_2.
+\]
+\end{lemma}
+\begin{proof}
+Choose integers $u>2\kappa+2$ and $v>4\kappa+4$. Put $R=2^j$.
+First restrict the input to an integer cube $B$ of side $R$ and linearize a
+finite set of parameters outside $X_j$. Its output is supported in a cube
+$B^*$ of side at most $5R+2$. Write $\lambda_x$ for the selected parameter at
+$x$. The $TT^*$ kernel, for $x,y\in B^*$, is
+\[
+ H(x,y)=\sum_{z\in B}\ee{\lambda_xP(x-z)-\lambda_yP(y-z)}
+                      K_j(x-z)\overline{K_j(y-z)}.
+\]
+The elementary bound is $|H(x,y)|\leq CR^{-n}$: at most $CR^n$ terms have
+magnitude at most $CR^{-2n}$.
+
+Call a pair bad if $|H(x,y)|>R^{-n}j^{-u}$.
+Use integer coordinates $z=z_0+t$ on $B$, with $1\leq t_i\leq R$, and write
+$X=x-z_0$, $Y=y-z_0$. Every coordinate of $X,Y$ is $O(R)$.
+After multiplying the amplitude by $R^{2n}$ it and its first-coordinate
+variation are bounded by a fixed constant, using
+$\|\partial_1K_j\|_\infty\leq CR^{-n-1}$.
+Lemma~\ref{lem:weylcor} and the weighted inverse lemma therefore give, for a
+bad pair, an integer $q\leq j^b$ such that
+\begin{align*}
+ \|q(\lambda_x-\lambda_y)\|_\T&\leq j^bR^{-D},\\
+ \|qD(\lambda_xX_1-\lambda_yY_1)\|_\T&\leq j^bR^{-(D-1)}.
+\end{align*}
+Here $b$ is a fixed positive integer depending on $u,n,D$, not on $j,M,x,y$.
+To obtain these two coefficients, expand the phase in $t_1$: its degree-$D$
+coefficient is $\lambda_x-\lambda_y$, and its degree-$(D-1)$ coefficient is
+$-D(\lambda_xX_1-\lambda_yY_1)$. They do not depend on the other coordinates.
+All fixed constants from the inverse estimate are absorbed by increasing
+$b$, since $C\leq j^{\lceil\log_2\max(C,1)\rceil}$ for $j\geq2$.
+Subtract $D X_1$ times the first approximation from the second. The integer
+$D X_1$ multiplies an integer approximant to an integer, so, after increasing
+$b$ once more,
+\begin{equation}\label{eq:minorh}
+ \|qD(x_1-y_1)\lambda_y\|_\T\leq j^bR^{-(D-1)}.
+\end{equation}
+
+Fix $y$ and $x'=(x_2,\ldots,x_n)$. Suppose at least $Rj^{-v}$ choices of
+$x_1$ give bad pairs. Pigeonhole their choices of $q\leq j^b$.
+For one $q$, \eqref{eq:minorh} holds on at least $Rj^{-(v+b)}$ distinct
+integers $h=x_1-y_1$ in an interval $[-CR,CR]$.
+Lemma~\ref{lem:multiples} applies to $qD\lambda_y$ with
+$E=j^bR^{-(D-1)}$ and density a fixed multiple of $j^{-(v+b)}$.
+Its hypotheses hold for all sufficiently large $j$, because $2^j$ eventually
+exceeds every fixed power of $j$. It produces a positive integer $q'$ and
+an integer $a'$ such that
+\[
+ q'\leq Cj^{v+2b},\qquad
+ |\lambda_y-a'/q'|\leq Cj^{3b+2v}R^{-D}
+\]
+after choosing a real representative and, if necessary, adding an integer.
+Here $q'=rqD$; dividing the torus approximation by $q'$ only improves the
+stated error. Reduce $a'/q'$ to lowest terms.
+Choose an integer $M>3b+2v+10$. For sufficiently large $j$, its reduced
+denominator is smaller than $H_j\geq(j+1)^M/2$ and its error is smaller than
+$w_j=(j+1)^MR^{-D}$. Thus $\lambda_y\in X_j$, a contradiction.
+
+We have proved that, for each fixed $y,x'$, fewer than $Rj^{-v}$ choices of
+$x_1$ are bad. Therefore there are at most $CR^{2n}j^{-v}$ bad pairs.
+On all other pairs use $|H|\leq R^{-n}j^{-u}$; on bad pairs use the elementary
+bound $CR^{-n}$. Since there are at most $CR^{2n}$ pairs in total,
+\[
+ \|H\|_{\ell^2(B^*\times B^*)}^2
+       \leq C(j^{-v}+j^{-2u}).
+\]
+Hilbert--Schmidt and $TT^*$ give for the localized linearization a norm at
+most $C(j^{-v/4}+j^{-u/2})\leq Cj^{-\kappa}$.
+
+Partition the whole input lattice into disjoint cubes of side $R$.
+At any output point, only a number bounded in terms of $n$ of their enlarged
+cubes can contribute. Cauchy--Schwarz in those contributions and then
+summation in the output give the squared global norm bounded by a fixed
+multiple of the sum of the squared localized norms. The input squared norms
+add exactly, because the cubes are disjoint. This proves the global bound
+for each finite linearization. Lemma~\ref{lem:ttstar} and then
+Lemma~\ref{lem:finite} give the maximal assertion. Increase $j_1$ to include
+all the size conditions imposed during the proof.
+\end{proof}
+
+\begin{construction}[Fixing the final exponent and the major-arc parameters]\label{con:parameters}
+From now on fix $1<p<\infty$, let $p'=p/(p-1)$, and choose an integer
+$r\geq2$ with $2r>\max(p,p')$. Put
+$a_p=\min(2/p,2/p')>0$ and choose $\kappa$ with $\kappa a_p>3$.
+Take $M,j_1$ from Lemma~\ref{lem:minorL2}, enlarging $M$ to an integer at
+least two if necessary. Enlarging $M$ enlarges $X_j$ for all sufficiently
+large $j$, so its complement estimate is preserved after increasing $j_1$.
+The pointwise bound
+$\sup_\lambda|T_{j,\lambda}f|\leq |K_j|*|f|$ has uniformly bounded strong
+$(1,1)$ and $(\infty,\infty)$ constants by \eqref{eq:dyadicbounds}.
+Interpolating with the minor-arc $L^2$ bound yields
+\begin{equation}\label{eq:minorp}
+ \left\|\sup_{\lambda\notin X_j}|T_{j,\lambda}f|\right\|_p
+                 \leq C_pj^{-2}\|f\|_p\qquad(j\geq j_1).
+\end{equation}
+Indeed the decay exponent is $\kappa a_p>3$, which is stronger than two.
+Set $\rho=1/(16M)$, and form the good rational sets $\mathcal U_N$ using
+Construction~\ref{con:goodset} with this $\rho$ and the already chosen $r$.
+All choices have thus been made in the order $p$, $r$, $\kappa$, $M$, $\rho$.
+\end{construction}
+
+\section{The rational lifting operators and their arithmetic bound}\label{sec:lifting}
+Choose smooth real even product cutoffs $\chi,\widetilde\chi$ with
+$0\leq\chi,\widetilde\chi\leq1$, such that
+$\chi=1$ on $[-1/2,1/2]^n$, $\supp\chi\subset[-1,1]^n$,
+$\widetilde\chi=1$ on $[-1,1]^n$, and
+$\supp\widetilde\chi\subset[-2,2]^n$.
+For $s\geq1$ put $N_s=2^s$ and choose
+\begin{equation}\label{eq:vs}
+ v_s=\left\lceil C_*(s+1)(1+2^{s/(2M)})\right\rceil,
+ \quad L_s=2^{v_s},\quad
+ \chi_s(\xi)=\chi(L_s\xi),\quad
+ \widetilde\chi_s(\xi)=\widetilde\chi(L_s\xi).
+\end{equation}
+Choose $C_*$ sufficiently large that, for every $s\geq1$,
+\begin{equation}\label{eq:scalerequirements}
+ v_s\geq100(n+D+1)(s+1),\qquad
+ 4/L_s\leq\exp(-C_{\rho,r}N_s^{2\rho}).
+\end{equation}
+Such a choice exists: $2\rho=1/(8M)<1/(2M)$, and taking logarithms reduces
+the second requirement to an inequality dominated by a fixed multiple of
+the defining expression for $v_s$. In particular all bumps centered at
+$\mathcal U_{N_s}$ used below are disjoint.
+Let
+\[
+ \mathcal R_s=\{a/q\in\T:(a,q)=1,\ 0\leq a<q,\ N_s/2\leq q<N_s\}.
+\]
+It has at most $N_s^2$ elements. For $\alpha=a/q\in\mathcal R_s$ and
+$\beta=b/q\in T[q]$ define
+\begin{align}
+ S(\alpha,\beta)&=q^{-n}\sum_{z\bmod q}\ee{\alpha P(z)+\beta\cdot z},\label{eq:Gaussdef}\\
+ \Lift_{s,\alpha}[m](\xi)
+   &=\sum_{\beta\in T[q]}S(\alpha,\beta)
+                        (m\chi_s)_{\mathrm{per}}(\xi-\beta),\label{eq:Liftdef}\\
+ \Aop_{s,\alpha}&=\Lift_{s,\alpha}[1],\qquad
+ \Dop_s[m](\xi)=\sum_{\beta\in\mathcal U_{N_s}}
+                    (m\widetilde\chi_s)_{\mathrm{per}}(\xi-\beta).
+\end{align}
+Symbols and their operators are distinguished by writing $(D)$ when needed.
+
+\begin{lemma}[The exact lifted kernel]\label{lem:liftkernel}
+\bp{lifted\_kernel\_identity}
+For every bounded measurable $m$ on the support of $\chi_s$,
+\begin{equation}\label{eq:liftkernel}
+ \check{\Lift_{s,\alpha}[m]}(y)
+             =\ee{\alpha P(y)}\check{(m\chi_s)}(y),\qquad y\in G.
+\end{equation}
+In particular, if $\varphi_s=\check\chi_s$, the kernel of $\Aop_{s,\alpha}$
+is $\ee{\alpha P(y)}\varphi_s(y)$, with
+$|\varphi_s(y)|\leq C B_{L_s}(y)$.
+\end{lemma}
+\begin{proof}
+Lemma~\ref{lem:fourierbook} computes the coefficient of each shifted bump.
+The remaining finite sum is
+\[
+ \sum_{\beta\in T[q]}S(\alpha,\beta)\ee{-\beta\cdot y}
+ =q^{-n}\sum_{z\bmod q}\ee{\alpha P(z)}
+                    \sum_{b\bmod q}\ee{b\cdot(z-y)/q}
+ =\ee{\alpha P(y)}.
+\]
+The inner sum is $q^n$ when $z\equiv y\pmod q$ and zero otherwise, by the
+finite geometric-sum formula. Since $P$ is an integer polynomial,
+$P(z)\equiv P(y)\pmod q$. This proves the identity, including $y=0$.
+Finally $\varphi_s(y)=L_s^{-n}\check\chi(y/L_s)$, so its Schwartz bound gives
+the envelope.
+\end{proof}
+
+\begin{lemma}[Arithmetic maximal decay]\label{lem:arithmax}
+\bp{arithmetic\_maximal\_decay}
+There is $\gamma>0$, depending on $n,D$, such that
+\begin{equation}\label{eq:arith2}
+ \left\|\sup_{\alpha\in\mathcal R_s}|\Aop_{s,\alpha}(D)f|\right\|_2
+                   \leq C2^{-\gamma s}\|f\|_2.
+\end{equation}
+For every $1<t<\infty$ there is $\delta_t>0$ such that for any finite list
+of inputs $f_\nu$,
+\begin{equation}\label{eq:arithvector}
+ \left\|\left(\sum_\nu\sup_{\alpha\in\mathcal R_s}
+                 |\Aop_{s,\alpha}(D)f_\nu|^2\right)^{1/2}\right\|_t
+ \leq C_t2^{-\delta_t s}
+          \left\|(f_\nu)_\nu\right\|_{\ell^t(G;\ell^2)}.
+\end{equation}
+\end{lemma}
+\begin{proof}
+Write $N=2^s$, $L=L_s$, and linearize the finite rational family by selecting
+$\alpha_x=a_x/q_x$ at $x$. The kernel identity gives its $TT^*$ kernel as
+\[
+ H(x,y)=\sum_{z\in G}\ee{\alpha_xP(z)-\alpha_yP(z+h)}
+                         \varphi_s(z)\overline{\varphi_s(z+h)},
+ \qquad h=y-x.
+\]
+The phase is periodic with period $Q=\lcm(q_x,q_y)$ in every coordinate,
+where $N/2\leq Q\leq N^2$. Lemma~\ref{lem:periodic} applies because $L\geq N^2$.
+Writing $G_Q$ for its normalized complete phase sum, it gives
+\begin{equation}\label{eq:arithH}
+ |H(x,y)|\leq C\bigl(|G_Q|+N^2/L\bigr)B_L(h).
+\end{equation}
+
+Suppose first that $D\geq4$. On every first-coordinate slice the coefficient
+of $z_1^{D-1}$ is $-D\alpha_yh_1$. Outside the set
+\[
+ E_y=\{h\in G:\gcd(q_y,Dh_1)>N^{1/2}\},
+\]
+its reduced denominator belongs to $[N^{1/2}/2,N]$.
+Corollary~\ref{lem:weylcor} therefore bounds $|G_Q|$ by $CN^{-c}$ for some
+$c>0$, uniformly in $\alpha_x$ and the other coordinates.
+For any cube of side $R\geq N$, membership in $E_y$ implies
+$r\mid Dh_1$ for some divisor $r\mid q_y$ with $r>N^{1/2}$.
+Lemma~\ref{lem:divisor}, with exponent $1/8$, gives
+\[
+ \#(E_y\cap\text{that cube})
+ \leq CR^{n-1}\sum_{\substack{r\mid q_y\\r>N^{1/2}}}(DR/r+D+1)
+ \leq CR^nN^{-3/8}.
+\]
+
+Suppose next that $D=2$. The complete sum factors over coordinates into
+quadratic sums of the form in Lemma~\ref{lem:gauss}. Let $v$ be the reduced
+denominator of $\alpha_x-\alpha_y$. If $v>N^{1/4}$, the first factor, and
+hence $|G_Q|$, is at most $CN^{-1/8}$. If $v\leq N^{1/4}$, a nonzero first
+factor requires $q_y\mid2v h_1$. Use the larger exceptional set, independent
+of $x$,
+\[
+ E_y=\bigcup_{1\leq v\leq N^{1/4}}\{h:q_y\mid2v h_1\}.
+\]
+In a cube of side $R\geq N$ its cardinality is at most
+\[
+ CR^{n-1}\sum_{v\leq N^{1/4}}(C Rv/N+1)
+          \leq CR^nN^{-1/2}.
+\]
+Outside this set $|G_Q|\leq CN^{-1/8}$ in both cases for $v$.
+Thus in either degree case there are $c,b>0$ with
+$|G_Q|\leq CN^{-c}+\ind_{E_y}(h)$ and exceptional density at most $CN^{-b}$
+in all cubes of side at least $N$.
+
+The lattice sum of $B_L$ is bounded. Its exceptional sum is at most
+$CN^{-b}$: partition $h$ into the ball of radius $L$ and shells of radius
+$2^kL$, use the just-proved counting bound with $R=C2^kL$, and sum the factors
+$2^{-k}$. Moreover $N^2/L\leq N^{-10}$ by \eqref{eq:scalerequirements}.
+Equation~\eqref{eq:arithH} consequently has a column sum at most $CN^{-c_0}$,
+where $c_0=\min(c,b,10)>0$, uniformly in $y$ and the linearization.
+The actual kernel $H$ is Hermitian, being a $TT^*$ kernel, so its row bound
+is the same. Schur and $TT^*$ give the operator norm at most $CN^{-c_0/2}$.
+This proves \eqref{eq:arith2} with $\gamma=c_0/2$, enlarging the constant for
+any finite small range of $N$.
+
+For the vector assertion at $t=2$, square \eqref{eq:arith2} for each input and
+sum. At both $t=1$ and $t=\infty$, Minkowski and the kernel identity give
+pointwise domination by
+$|\varphi_s|*(\sum_\nu|f_\nu|^2)^{1/2}$, whose endpoint norm is uniformly
+bounded by Young. Interpolating these bounds with the vector $t=2$ bound
+proves \eqref{eq:arithvector}; one possible choice is
+$\delta_t=\gamma\min(2/t,2/t')$.
+\end{proof}
+
+\begin{lemma}[Factorization and lifted square estimates]\label{lem:liftsquare}
+\bp{lifted\_square\_function}
+One has the exact symbol factorization
+\begin{equation}\label{eq:liftfactor}
+ \Lift_{s,\alpha}[m]=\Aop_{s,\alpha}\,\Dop_s[m].
+\end{equation}
+For a finite family of bounded measurable symbols $m_\nu$,
+\begin{equation}\label{eq:liftL2square}
+ \left\|\left(\sum_\nu\sup_\alpha
+          |\Lift_{s,\alpha}[m_\nu](D)f|^2\right)^{1/2}\right\|_2
+ \leq C2^{-\gamma s}
+      \left(\sup_\eta\sum_\nu|m_\nu(\eta)|^2\right)^{1/2}\|f\|_2.
+\end{equation}
+If every signed sum $\sum_\nu\epsilon_\nu m_\nu$, $\epsilon_\nu\in\{-1,1\}$,
+has Euclidean $L^{2r}$ multiplier norm at most $A$, then
+\begin{equation}\label{eq:liftLpsquare}
+ \left\|\left(\sum_\nu\sup_\alpha
+          |\Lift_{s,\alpha}[m_\nu](D)f|^2\right)^{1/2}\right\|_p
+                  \leq C_p2^{-\delta_p s}A\|f\|_p.
+\end{equation}
+Here and below the supremum in $\alpha$ is over $\mathcal R_s$.
+\end{lemma}
+\begin{proof}
+Every center in $T[q]$ for $q<N_s$ belongs to $\mathcal U_{N_s}$.
+The supports of the enlarged bumps at different centers of that good set
+are disjoint, and $\chi_s\widetilde\chi_s=\chi_s$.
+Multiplication of the two finite periodized sums therefore leaves exactly
+the matching-center terms, giving \eqref{eq:liftfactor}.
+Apply \eqref{eq:arithvector} to the inputs $\Dop_s[m_\nu](D)f$.
+At $p=2$, Parseval and disjointness of the good-set bumps bound their square
+norm by
+$(\sup_\eta\sum_\nu|m_\nu(\eta)|^2)^{1/2}\|f\|_2$.
+At the prescribed $p$, randomize the list by Lemma~\ref{lem:khintchine}.
+Each signed symbol multiplied by $\widetilde\chi_s$ has Euclidean
+$L^{2r}$ norm at most $CA$, by Young and the uniform $L^1$ norm of
+$\check{\widetilde\chi_s}$. Its support is in
+$[-2/L_s,2/L_s]^n$. Theorem~\ref{thm:IW} applies with
+$\varepsilon=4/L_s$ by \eqref{eq:scalerequirements} and bounds its good-set
+periodization by $C_pA$ on $\ell^p$. Average over the signs and use the
+Rademacher lower inequality to recover the square norm. Combining this
+with the arithmetic vector bound proves \eqref{eq:liftLpsquare}.
+\end{proof}
+
+\begin{lemma}[Positive envelopes for lifted annular kernels]\label{lem:liftenvelope}
+\bp{lifted\_annular\_positive\_envelope}
+For $j\geq1$, every real $\mu$, and every $\alpha\in\mathcal R_s$,
+\[
+ |\Lift_{s,\alpha}[\Phi_{j,\mu}](D)f|
+ \leq C B_{\max(2^j,L_s)}*|f|\leq C\bM f.
+\]
+The same pointwise bound holds for the supremum over all those indices at
+fixed $s$.
+\end{lemma}
+\begin{proof}
+The Euclidean inverse transform of $\Phi_{j,\mu}\chi_s$ is
+$(\ee{\mu P}K_j)*_E\varphi_s$. Its absolute value is at most
+$|K_j|*_E|\varphi_s|$, which is bounded by
+$C B_{2^j}*_E B_{L_s}\leq C B_{\max(2^j,L_s)}$ by
+Lemma~\ref{lem:maximal}. Equation~\eqref{eq:liftkernel} does not change the
+absolute value when this kernel is sampled on $G$. Apply the lattice
+envelope bound from that lemma. Its constant is independent of every
+index in the supremum.
+\end{proof}
+
+\section{Lifted maximal truncations}\label{sec:truncation}
+\begin{lemma}[The unmodulated lifted maximal truncation]\label{lem:lifttrunc}
+\bp{lifted\_maximal\_truncation}
+There is $\theta_p>0$ such that
+\begin{equation}\label{eq:lifttrunc}
+ \left\|\sup_{\alpha\in\mathcal R_s,\ J\geq1}
+   \left|\Lift_{s,\alpha}\left[\sum_{1\leq j<J}\widehat K_j\right](D)f\right|
+       \right\|_p
+       \leq C_p2^{-\theta_p s}\|f\|_p.
+\end{equation}
+The supremum in $J$ is over integers.
+\end{lemma}
+\begin{proof}
+Let $N=2^s$ and let $Q_s=\lcm(1,\ldots,N-1)$. Its elementary upper bound is
+$Q_s\leq\prod_{q<N}q\leq N^N$, so $\log_2Q_s\leq s2^s$.
+After all constants in \eqref{eq:vs} are fixed, choose an integer $C_1\geq3$
+so large that, with the integer power of two
+$J_s=2^{C_1(s+1)}$, for every $s\geq1$,
+\begin{equation}\label{eq:longthreshold}
+ J_s\geq v_s+10,\quad \sqrt n Q_s\leq2^{J_s-3},\quad
+          N^{n+2}Q_s2^{-J_s}\leq2^{-10s}.
+\end{equation}
+Existence follows by taking logarithms: $J_s$ dominates $v_s$, $s2^s$ and
+any fixed multiple of $s$; increasing $C_1$ handles the finite initial range.
+This choice is permitted to depend on the already fixed $p,n,D,K$.
+
+For $J\leq J_s$, use the binary inequality of Lemma~\ref{lem:binary}, with
+$u_j=\Lift_{s,\alpha}[\widehat K_j](D)f(x)$ and
+$L=\log_2J_s=C_1(s+1)$. At each binary level the block symbols are
+$m_I=\sum_{j\in I}\widehat K_j$. Every signed sum of those block symbols
+has coefficients of magnitude at most one on disjoint dyadic indices.
+Lemma~\ref{lem:signedK} gives its uniform Euclidean $L^{2r}$ bound.
+Equation~\eqref{eq:liftLpsquare} therefore bounds the square function of
+that level, with the supremum in $\alpha$ inside each square, by
+$C_p2^{-\delta_p s}\|f\|_p$. The triangle inequality over the $L+1$ levels
+bounds the short maximum by $C_p(s+1)2^{-\delta_p s}\|f\|_p$.
+
+For $J>J_s$ write
+\[
+ \sum_{1\leq j<J}\widehat K_j=m_K-m_{\geq J},\qquad
+ m_{\geq J}=\tau_Jm_K+\widehat E_J.
+\]
+The second identity follows by Fourier transformation of
+Lemma~\ref{lem:smootherrors}; it is an identity of bounded symbols almost
+everywhere, which is sufficient for the operators.
+The whole multiplier $m_K$ is bounded after lifting by the one-element case
+of \eqref{eq:liftLpsquare}. The supremum of the lifted $\widehat E_J$ is at
+most their square function; every finite signed family has a uniformly
+bounded real $L^{2r}$ norm by Lemma~\ref{lem:smootherrors}. The same square
+estimate gives $C_p2^{-\delta_p s}\|f\|_p$, first for finite $J$ sets and then
+for all of them. It remains to bound the long maximum of
+$\Lift_{s,\alpha}[\tau_Jm_K]$.
+
+Let $K_s$ denote the lattice operator with symbol
+$(m_K\chi_s)_{\mathrm{per}}$. Its $\ell^p$ norm is at most $C_p$, by
+Lemma~\ref{lem:sampling}, Lemma~\ref{lem:signedK}, and Young for the cutoff.
+For $\beta\in T[q]$ put $G_\beta=K_sM_\beta f$.
+Let $\mathcal V_s=\{0,\ldots,Q_s-1\}^n$ and, for $u\in\mathcal V_s$, define
+\[
+ I_{\alpha,J,u}=\Lift_{s,\alpha}[\ee{u\cdot\xi}\tau_J(\xi)m_K(\xi)](D)f.
+\]
+For $J>J_s$ and $|u|\leq\sqrt nQ_s$, the fundamental theorem of calculus
+and the Schwartz derivative bounds for $\phi$ give on $G$
+\[
+ |\phi_J(y)-\phi_J(y-u)|\leq C|u|2^{-J}B_{2^J}(y).
+\]
+Indeed the segment has length $|u|\leq2^{J-3}$, so its decay envelope is
+comparable to the envelope centered at $y$.
+All scalar symbols in this paragraph have support in a fundamental cube.
+Consequently the product of their periodizations is the periodization of
+their product: at a torus point only the matching translate can be nonzero.
+Lemma~\ref{lem:fourierbook} then identifies multiplication by $\tau_J$ with
+convolution by the sampled $\phi_J$, and multiplication by
+$\ee{u\cdot\xi}\tau_J$ with its translate $\phi_J(\cdot-u)$.
+It follows, using modulation, that
+\begin{equation}\label{eq:Ishift}
+ I_{\alpha,J,u}(x)=\sum_{\beta\in T[q]}S(\alpha,\beta)\ee{-\beta\cdot x}
+                                    (\phi_J*G_\beta)(x-u).
+\end{equation}
+All convolutions in this display are on $G$.
+
+Since $|S|\leq1$, there are at most $N^{n+2}$ pairs $(\alpha,\beta)$, and
+$\bM$ is bounded on $\ell^p$, the translation bound gives uniformly in $u$
+\begin{equation}\label{eq:shifterror}
+ \left\|\sup_{\alpha,J>J_s}|I_{\alpha,J,0}-I_{\alpha,J,u}|\right\|_p
+ \leq C_pN^{n+2}Q_s2^{-J_s}\|f\|_p
+ \leq C_p2^{-10s}\|f\|_p.
+\end{equation}
+For completeness, apply the bound first to each $G_\beta$, obtaining
+$CQ_s2^{-J_s}\bM G_\beta$ pointwise after maximizing $J$; then take its
+$\ell^p$ norm, use $\|G_\beta\|_p\leq C_p\|f\|_p$, and sum the indicated
+finite number of pairs.
+
+We now average the shifted main expression, without paying for the size of
+$Q_s$. All averages below are normalized counting averages on $\mathcal V_s$.
+In the $p$th power of its norm, put $z=x-u$ in \eqref{eq:Ishift} and then,
+for fixed $z$, put $v=z+u\pmod{Q_s}$. Each denominator $q$ under consideration
+divides $Q_s$, so $\ee{-\beta\cdot(z+u)}=\ee{-\beta\cdot v}$ and this is a
+bijection of the averaging set. Thus
+\begin{align*}
+ \av_u\sum_x\sup_{\alpha,J>J_s}|I_{\alpha,J,u}(x)|^p
+ &=\av_v\sum_z\sup_{\alpha,J>J_s}|(\phi_J*H_{\alpha,v})(z)|^p,\\
+ H_{\alpha,v}(z)&=\sum_{\beta\in T[q]}S(\alpha,\beta)
+                                     \ee{-\beta\cdot v}G_\beta(z).
+\end{align*}
+Nonnegativity of $\phi_J$ implies
+$\sup_{\alpha,J}|\phi_J*H_{\alpha,v}|
+ \leq C\bM(\sup_\alpha|H_{\alpha,v}|)$.
+The maximal-function bound therefore makes the last average at most
+$C_p\av_v\sum_z\sup_\alpha|H_{\alpha,v}(z)|^p$.
+
+Reverse the variables by the bijection
+$(x,u)\mapsto(z=x-u,v=x\pmod{Q_s})$.
+The new inner expression is
+\[
+ H_{\alpha,v}(x-u)=\sum_{\beta\in T[q]}S(\alpha,\beta)
+                          \ee{-\beta\cdot x}G_\beta(x-u)
+ =\Lift_{s,\alpha}[\ee{u\cdot\xi}m_K](D)f(x).
+\]
+The Euclidean multiplier $\ee{u\cdot\xi}m_K$ is an output translate of
+$m_K(D)$, so its $L^{2r}$ norm is uniformly bounded in $u$.
+The one-element lifted estimate \eqref{eq:liftLpsquare} bounds its maximal
+$\ell^p$ norm by $C_p2^{-\delta_p s}\|f\|_p$, independently of $u$.
+The averaging argument has consequently proved
+\[
+ \left(\av_u\|\sup_{\alpha,J>J_s}|I_{\alpha,J,u}|\|_p^p\right)^{1/p}
+             \leq C_p2^{-\delta_p s}\|f\|_p.
+\]
+Use Minkowski on the product of $G$ with the normalized finite averaging
+space, and use \eqref{eq:shifterror}, to replace $I_{\alpha,J,u}$ by
+$I_{\alpha,J,0}$ in this bound. This proves the long smooth maximum.
+All manipulations may first use finite $J$ sets; monotone convergence adds
+all $J>J_s$.
+
+Combine the short and long estimates. The elementary bound
+$(s+1)2^{-\delta_p s}\leq C_p2^{-\delta_p s/2}$ absorbs the short factor.
+For example any $0<\theta_p\leq\min(\delta_p/2,1)$ suffices after adjusting
+the constant. This proves \eqref{eq:lifttrunc}.
+\end{proof}
+
+\section{Lifted oscillatory bands and their assembly}\label{sec:bands}
+For $s\geq1$ and $\ell\in\Z$ define
+\[
+ \mathcal B_{s,\ell}f=
+ \sup_{\substack{\alpha\in\mathcal R_s,\ j\geq1\\
+                  2^\ell\leq|\mu|2^{Dj}\leq2^{\ell+1}}}
+       |\Lift_{s,\alpha}[\Phi_{j,\mu}](D)f|.
+\]
+Including both endpoints here only enlarges the bounding operator. In the
+actual decomposition we use half-open bands.
+
+\begin{lemma}[A uniform-in-band arithmetic gain]\label{lem:middleband}
+\bp{lifted\_band\_uniform\_gain}
+There is $b_p>0$ such that for every integer $\ell$,
+\[
+ \|\mathcal B_{s,\ell}f\|_p\leq C_p2^{-b_p s}\|f\|_p.
+\]
+\end{lemma}
+\begin{proof}
+First fix one sign $\sigma$ and finitely many $j$. For $u\in[1,2]$ put
+$F_{j,\alpha}(u)=\Lift_{s,\alpha}
+ [\Phi_{j,\sigma u2^{\ell-Dj}}](D)f$.
+These are continuously differentiable in $u$ for finite-support $f$;
+differentiation of their compactly supported inverse Fourier integrals is
+justified by the derivative bounds of Lemma~\ref{lem:radialFourier}.
+At each lattice point the fundamental theorem of calculus gives
+\begin{align*}
+ \sup_{j,\alpha,u}|F_{j,\alpha}(u)|^2
+ &\leq\sum_j\sup_\alpha|F_{j,\alpha}(1)|^2\\
+ &\quad+2\int_1^2
+ \left(\sum_j\sup_\alpha|F_{j,\alpha}(u)|^2\right)^{1/2}
+ \left(\sum_j\sup_\alpha|F'_{j,\alpha}(u)|^2\right)^{1/2}du.
+\end{align*}
+To obtain it, apply the identity for the derivative of $|F|^2$ to each
+$j,\alpha$, extend the integral to $[1,2]$, bound the selected endpoint by
+the sum of all endpoints, and apply Cauchy--Schwarz to the $j$ terms in the
+integrand. Summing in $x$ and applying Cauchy--Schwarz once more bounds the
+integral by the product of the two square-function $\ell^2$ norms.
+
+Equations~\eqref{eq:liftL2square}, \eqref{eq:radialsquare}, and
+\eqref{eq:radialsquarederiv} show that the resulting squared norm is at most
+\[
+ C2^{-2\gamma s}\|f\|_2^2
+ \begin{cases}
+ 2^{-n\ell}+2^{(1-n)\ell},&\ell\geq0,\\
+ 1+2^\ell,&\ell<0.
+ \end{cases}
+\]
+Each brace is bounded since $n\geq1$. Taking square roots, adding the two
+signs, and passing through finite maxima proves a uniform
+$C2^{-\gamma s}$ bound at $p=2$.
+Lemma~\ref{lem:liftenvelope} supplies weak $(1,1)$ and strong
+$(\infty,\infty)$ bounds independent of $s,\ell$. Interpolation gives the
+assertion; $b_p=\gamma\min(2/p,2/p')$ is admissible.
+\end{proof}
+
+\begin{lemma}[The high-band analytic gain]\label{lem:highband}
+\bp{lifted\_high\_band\_decay}
+For $\ell\geq0$,
+\[
+ \|\mathcal B_{s,\ell}f\|_p
+            \leq C_p2^{(n+2)s}2^{-\sigma_p\ell}\|f\|_p,
+\]
+where $\sigma_p>0$ is the exponent from Lemma~\ref{lem:continuousband}.
+\end{lemma}
+\begin{proof}
+The Euclidean maximal family with symbols $\Phi_{j,\mu}\chi_s$ is obtained
+by applying the continuous annular family to $\chi_s(D)F$.
+Young bounds this preliminary convolution uniformly. Its maximal $L^p$
+norm is therefore at most $C_p2^{-\sigma_p\ell}$ by
+Lemma~\ref{lem:continuousband}. All these symbols are supported in
+$[-1/8,1/8]^n$, so Lemma~\ref{lem:sampling} transfers this bound to their
+periodizations. For a shifted center $\beta$, modulation preserves the input
+norm and gives the same maximal bound. In the definition of the lift,
+$|S(\alpha,\beta)|\leq1$ and there are at most $2^{(n+2)s}$ pairs
+$(\alpha,\beta)$. Bound the rational supremum by the sum over those pairs,
+use the triangle inequality for the maximal family and then for its
+$\ell^p$ norm. This gives the stated estimate.
+\end{proof}
+
+\begin{theorem}[Lifted polynomial partial sums]\label{thm:liftedSW}
+\bp{lifted\_polynomial\_maximal\_partial\_sums}
+There is $c_p>0$ such that
+\begin{equation}\label{eq:liftedSW}
+ \left\|\sup_{\substack{\alpha\in\mathcal R_s,\ \mu\in\R\\
+                        1\leq a\leq b<\infty}}
+ \left|\Lift_{s,\alpha}\left[\sum_{j=a}^b\Phi_{j,\mu}\right](D)f\right|
+        \right\|_p
+        \leq C_p2^{-c_p s}\|f\|_p.
+\end{equation}
+The endpoints $a,b$ are integers. Denote the maximal expression on the left
+before taking its norm by $\mathcal P_s f$.
+\end{theorem}
+\begin{proof}
+Choose $C_2\geq1$ with $C_2\sigma_p>n+3$ and set
+$B_s=\lceil C_2(s+1)\rceil$. Fix $\alpha,\mu,a,b$.
+If $\mu\ne0$, assign every $j\in[a,b]$ its unique integer band
+\[
+ 2^\ell\leq |\mu|2^{Dj}<2^{\ell+1}.
+\]
+At most one $j$ lies in a prescribed band: increasing $j$ by one multiplies
+$|\mu|2^{Dj}$ by $2^D\geq4$, whereas two numbers in the same half-open band
+have ratio less than two. Split these bands into
+$\ell\geq B_s$, $-B_s\leq\ell<B_s$, and $\ell<-B_s$.
+The high-band contribution is pointwise at most
+$\sum_{\ell\geq B_s}\mathcal B_{s,\ell}f$.
+By Lemma~\ref{lem:highband} its norm is at most
+\[
+ C_p2^{(n+2)s}\sum_{\ell\geq B_s}2^{-\sigma_p\ell}\|f\|_p
+ \leq C_p2^{-s}\|f\|_p.
+\]
+The middle contribution is at most
+$\sum_{-B_s\leq\ell<B_s}\mathcal B_{s,\ell}f$ and has norm at most
+$C_p(s+1)2^{-b_p s}\|f\|_p$ by Lemma~\ref{lem:middleband}.
+
+For the low part the relevant $j$ form an initial interval of $[a,b]$, since
+$|\mu|2^{Dj}$ increases with $j$. Write on this interval
+$\Phi_{j,\mu}=\widehat K_j+\widehat{(\ee{\mu P}-1)K_j}$.
+The unmodulated interval sum is a difference of two partial sums beginning
+at one, and is bounded by twice the maximal function in
+Lemma~\ref{lem:lifttrunc}.
+On the support of $K_j$,
+$|\ee{\mu P(y)}-1|\leq C_D|\mu|2^{Dj}$.
+The proof of Lemma~\ref{lem:liftenvelope}, with this additional scalar factor,
+therefore bounds the lifted error pointwise by
+$C_D|\mu|2^{Dj}\bM f$.
+The geometric series of those weights on the low interval is at most
+$2^{-B_s}/(1-2^{-D})$. The entire low error is thus bounded by
+$C_D2^{-B_s}\bM f$, whose $\ell^p$ norm is at most
+$C_p2^{-B_s}\|f\|_p$.
+For $\mu=0$ the whole interval is the unmodulated part and its error is
+zero; no logarithm or band index for zero is used.
+
+Every pointwise upper bound just obtained is independent of
+$\alpha,\mu,a,b$. Take their supremum, then the $\ell^p$ norm.
+Minkowski first for finite high-band sums and Fatou for their increasing
+limit justify the infinite nonnegative majorant.
+Finally $(s+1)2^{-b_p s}\leq C_p2^{-b_p s/2}$.
+Any $0<c_p\leq\min(\theta_p,b_p/2,1)$ proves \eqref{eq:liftedSW}.
+\end{proof}
+
+\section{Kernel-side major-arc approximation and coherent grouping}\label{sec:major}
+\begin{lemma}[A quantitative smoothing error]\label{lem:kernelerror}
+\bp{physical\_major\_arc\_error}
+Let $R=2^j$, $j\geq1$, let $1\leq L_s\leq R$, and suppose
+$|\mu|R^D\leq U$. Put $h_{j,\mu}=\ee{\mu P}K_j$.
+Then, on $E$ and hence on $G$,
+\begin{equation}\label{eq:kernelerror}
+ |h_{j,\mu}(y)-(h_{j,\mu}*_E\varphi_s)(y)|
+                 \leq C(1+U)(L_s/R)B_R(y).
+\end{equation}
+If $\lambda=\alpha+\mu$ in $\T$, with $\alpha\in\mathcal R_s$, then the
+lattice convolution kernel of
+$T_{j,\lambda}-\Lift_{s,\alpha}[\Phi_{j,\mu}](D)$ is
+\[
+ \ee{\alpha P(y)}[h_{j,\mu}(y)-(h_{j,\mu}*_E\varphi_s)(y)].
+\]
+In particular the error includes its value at $y=0$.
+\end{lemma}
+\begin{proof}
+The product and chain rules and \eqref{eq:dyadicbounds} give
+\[
+ \|h_{j,\mu}\|_1\leq C,\quad
+ \supp h_{j,\mu}\subset\{|y|\leq2R\},\quad
+ \|\nabla h_{j,\mu}\|_\infty\leq C(1+U)R^{-n-1}.
+\]
+Fourier inversion gives $\int\varphi_s=\chi_s(0)=1$, and its first absolute
+moment is at most $CL_s$. For $|y|\leq4R$ write the difference as
+$\int\varphi_s(z)[h(y)-h(y-z)]\,dz$. The mean-value bound controls it by
+$C(1+U)R^{-n-1}\int |z||\varphi_s(z)|\,dz
+ \leq C(1+U)L_sR^{-n-1}$.
+This is \eqref{eq:kernelerror} in that region because $B_R(y)\geq cR^{-n}$.
+For $|y|>4R$, $h(y)=0$ and $|y-z|\geq|y|/2$ when $z$ is in the support of
+$h$. The Schwartz bound yields
+\[
+ |h*\varphi_s(y)|\leq C\|h\|_1 L_s^{-n}(1+|y|/L_s)^{-n-1}
+                \leq C L_s|y|^{-n-1}.
+\]
+For $|y|>4R$, $B_R(y)$ is comparable to $R|y|^{-n-1}$, proving the remaining
+region. The kernel formula follows from \eqref{eq:liftkernel} and the fact
+that $P(y)\in\Z$, so equality of $\lambda$ and $\alpha+\mu$ modulo integers
+is enough. At zero the original dyadic kernel vanishes, but its smoothed
+counterpart need not; the difference just estimated is retained there.
+\end{proof}
+
+\begin{lemma}[The final lower scale and interval coherence]\label{lem:coherence}
+\bp{major\_arc\_coherent\_intervals}
+After all previous constants have been chosen, one can choose an integer
+$j_0\geq j_1$ such that for every $j\geq j_0$:
+\begin{enumerate}
+\item $w_j<1/4$, the sequence $w_j$ is strictly decreasing, and
+$w_j\leq H_j^{-2}/16$;
+\item the arcs defining $X_j$ are pairwise disjoint;
+\item if $1\leq s\leq\lfloor M\log_2(j+1)\rfloor$, then $v_s\leq j/2$.
+\end{enumerate}
+For such $s,j$ every rational center of denominator $q\in[2^{s-1},2^s)$
+is allowed in $X_j$. For a fixed $s$, a fixed $\lambda\in\T$, and a finite
+upper scale $J$, all $j\in[j_0,J]$ for which the unique major center at scale
+$j$ belongs to $\mathcal R_s$ have the same center $\alpha$, if there are any.
+Their indices form an interval beginning at
+\[
+ j_s=\max\bigl(j_0,\lceil2^{s/M}\rceil-1\bigr).
+\]
+For this interval the difference $\mu=\lambda-\alpha$ has one fixed real
+representative of absolute value less than $1/4$.
+\end{lemma}
+\begin{proof}
+The ratio of consecutive widths is
+$w_{j+1}/w_j=2^{-D}(1+1/(j+1))^M$, which is less than one for sufficiently
+large $j$. The limit $(j+1)^{3M}2^{-Dj}\to0$ gives
+$w_j\leq (j+1)^{-2M}/16\leq H_j^{-2}/16$ and $w_j<1/4$ after increasing
+the lower scale. Rational separation in Lemma~\ref{lem:divisor} then gives
+disjointness, since two denominators smaller than $H_j$ have center distance
+greater than $H_j^{-2}$, whereas the sum of their radii is at most
+$H_j^{-2}/8$.
+
+For an admissible $s$, \eqref{eq:vs} gives
+\[
+ v_s\leq1+C_*(M\log_2(j+1)+1)(1+\sqrt{j+1}).
+\]
+This is at most $j/2$ for all sufficiently large $j$, since
+$\log(j+1)/\sqrt{j+1}\to0$. These are elementary exponential-versus-power
+limits: putting $t=\log(j+1)$ reduces them to $t^ae^{-ct}\to0$, which follows,
+for example, by bounding the exponential from below by a term of its power
+series of integer degree greater than $a$. Choose $j_0$ above all the finite
+thresholds, including $j_1$.
+
+The inequality $H_j\geq2^s$ is equivalent to
+$M\log_2(j+1)\geq s$, hence to $j\geq\lceil2^{s/M}\rceil-1$.
+This proves the admissibility and the formula for $j_s$.
+For any such $j$, $w_j\leq2^{-2s}/16$.
+Suppose two indices in the specified set had different centers in
+$\mathcal R_s$. Their torus distance would be at most the sum of the two
+widths, hence at most $2^{-2s}/8$. But their denominators are smaller than
+$2^s$, so rational separation gives distance greater than $2^{-2s}$.
+The contradiction proves that the center $\alpha$ is fixed.
+Once this center exists, it is admissible at every $j\geq j_s$.
+The condition $\|\lambda-\alpha\|_\T\leq w_j$ is an initial interval of
+those indices because $w_j$ decreases. Uniqueness of the major center shows
+that exactly those indices occur. The restriction $j\leq J$ makes the
+interval finite. Since every width is less than $1/4$, there is a unique
+representative $\mu$ of the difference in $(-1/4,1/4)$, and it is independent
+of $j$.
+\end{proof}
+
+\begin{proposition}[Uniform finite dyadic estimate]\label{prop:finiteSW}
+\bp{finite\_dyadic\_stein\_wainger}
+For every integer $J\geq j_0$ and finite-support $f$,
+\begin{equation}\label{eq:finiteSW}
+ \left\|\sup_{\lambda\in\T}\left|\sum_{j=j_0}^J T_{j,\lambda}f\right|\right\|_p
+                  \leq C_p\|f\|_p,
+\end{equation}
+with a constant independent of $J$ and $f$.
+\end{proposition}
+\begin{proof}
+At each fixed $\lambda$ split the indices into those for which
+$\lambda\notin X_j$ and those for which $\lambda\in X_j$.
+The maximal norm of the first sum is at most
+\[
+ \sum_{j=j_0}^J\left\|\sup_{\lambda\notin X_j}|T_{j,\lambda}f|\right\|_p
+ \leq C_p\sum_{j\geq j_0}j^{-2}\|f\|_p
+ \leq C_p\|f\|_p
+\]
+by \eqref{eq:minorp} and the convergent positive series.
+
+For a major index let $\alpha=a/q$ be its unique center, let $s$ be the unique
+integer with $2^{s-1}\leq q<2^s$, and take $\mu$ as in
+Lemma~\ref{lem:coherence}. Because $q<H_j$ and $H_j$ is an integer power of
+two, $s\leq\lfloor M\log_2(j+1)\rfloor$; no partly filled top bin occurs.
+We have $|\mu|2^{Dj}\leq(j+1)^M$ and $L_s\leq2^{j/2}$.
+Lemma~\ref{lem:kernelerror} therefore gives, uniformly in this choice of
+$\lambda,s,\alpha,\mu$,
+\[
+ |T_{j,\lambda}f-\Lift_{s,\alpha}[\Phi_{j,\mu}](D)f|
+       \leq C(j+1)^M2^{-j/2}(B_{2^j}*|f|).
+\]
+The right side has $\ell^p$ norm at most
+$C_p(j+1)^M2^{-j/2}\|f\|_p$ by Young and the uniform lattice sum of $B_{2^j}$.
+Its sum over $j\geq j_0$ converges, again by exponential decay. This bounds
+the supremum of the total error; it does not count how many arcs are present.
+
+For the remaining main terms, group the finite indices by $s$.
+Lemma~\ref{lem:coherence} says that, for each fixed $\lambda,s$, either the
+sum is empty or it is
+\[
+ \Lift_{s,\alpha}\left[\sum_{j=a}^b\Phi_{j,\mu}\right](D)f
+\]
+for one $\alpha\in\mathcal R_s$, one real $\mu$, and one finite integer
+interval $1\leq a\leq b$. Its absolute value is at most $\mathcal P_s f$.
+Thus the maximal main term is pointwise at most $\sum_{s\geq1}\mathcal P_s f$.
+Only finitely many $s$ occur before enlarging this nonnegative sum.
+Theorem~\ref{thm:liftedSW}, Minkowski, and the geometric series give
+\[
+ \left\|\sum_{s\geq1}\mathcal P_s f\right\|_p
+ \leq C_p\sum_{s\geq1}2^{-c_p s}\|f\|_p
+ \leq C_p\|f\|_p.
+\]
+Taking increasing finite partial sums and applying Fatou justifies the
+infinite majorant. Adding minor terms, smoothing errors and major terms
+proves \eqref{eq:finiteSW}.
+\end{proof}
+
+\section{The operator on all of \texorpdfstring{$\ell^p$}{lp} and the final theorem}\label{sec:final}
+\begin{lemma}[Absolute convergence and the scalar supremum]\label{lem:absolute}
+\bp{absolute\_convergence\_and\_parameter\_continuity}
+For every $1<p<\infty$ the restricted kernel
+$K\ind_{G\setminus\{0\}}$ belongs to $\ell^{p'}(G)$.
+For $f\in\ell^p(G)$ and each $x\in G$ the series
+\[
+ T_\lambda f(x)=\sum_{y\in G\setminus\{0\}}
+                    \ee{\lambda P(y)}K(y)f(x-y)
+\]
+is absolutely convergent, uniformly in $\lambda\in\R$.
+It is continuous and one-periodic in $\lambda$; its absolute value attains a
+maximum on $\T$, equal to the supremum over rational parameters.
+For any two $\ell^p$ inputs,
+\begin{equation}\label{eq:pointwisecontinuity}
+ \sup_\lambda|T_\lambda(f-g)(x)|
+            \leq\|K\|_{\ell^{p'}(G\setminus\{0\})}\|f-g\|_p.
+\end{equation}
+\end{lemma}
+\begin{proof}
+Compactness of the sphere bounds $|\Omega|$, hence $|K(y)|\leq C|y|^{-n}$.
+There are at most $C_n2^{kn}$ lattice points with $2^k\leq|y|<2^{k+1}$.
+Their contribution to the $p'$th power of the kernel norm is at most
+$C2^{-kn(p'-1)}$. Its sum for $k\geq0$ converges because $p'>1$; this covers
+all nonzero lattice points since their norm is at least one.
+H\"older now gives
+$\sum_{y\ne0}|K(y)f(x-y)|\leq\|K\|_{p'}\|f\|_p$.
+The tails of this positive convergent series bound the tails uniformly in
+$\lambda$. Finite sums are continuous, so their uniform limit is continuous:
+for a specified error first make both tails smaller than a third of it,
+then use continuity of the finite sum. Since $P(y)\in\Z$, each summand has
+period one. Compactness of $[0,1]$ and the extreme-value theorem give the
+maximum. Density of rational numbers and continuity show that its value is
+the supremum over rational parameters. Applying H\"older to $f-g$ proves
+\eqref{eq:pointwisecontinuity}.
+\end{proof}
+
+\begin{theorem}[The combined discrete Stein--Wainger bound]\label{thm:main}
+\bp{discrete\_stein\_wainger\_lp}
+Let $n,d\geq1$ be integers. Let $\Omega:E\setminus\{0\}\to\C$ be smooth,
+homogeneous of degree zero, and have integral zero on $S^{n-1}$.
+Set $K(y)=\Omega(y)|y|^{-n}$ for $y\ne0$ and
+$P(y)=(y_1^2+\cdots+y_n^2)^d$.
+For every real $p$ with $1<p<\infty$ there is a finite constant
+$C_{p,n,d,\Omega}$ such that, for all $f\in\ell^p(\Z^n)$,
+\begin{equation}\label{eq:MAIN}
+ \left\|\sup_{\lambda\in\R}\left|
+       \sum_{y\in\Z^n\setminus\{0\}}
+               \ee{\lambda P(y)}K(y)f(x-y)\right|\right\|_{\ell^p_x}
+       \leq C_{p,n,d,\Omega}\|f\|_{\ell^p}.
+\end{equation}
+The sum is the absolutely convergent sum in Lemma~\ref{lem:absolute}.
+The supremum is over a scalar parameter, and only finite $p>1$ are asserted.
+\end{theorem}
+\begin{proof}
+All choices and estimates above were made for an arbitrary fixed
+$p\in(1,\infty)$. For finite-support $f$, the telescoping identity gives at
+nonzero lattice points
+$K(y)=\eta(y)K(y)+\sum_{j\geq1}K_j(y)$.
+The initial kernel
+\[
+ k_{\mathrm{init}}(y)=|\eta(y)K(y)|\ind_{y\ne0}
+                           +\sum_{1\leq j<j_0}|K_j(y)|
+\]
+has finite $\ell^1$ norm: the first term is supported on finitely many lattice
+points, and each of the finitely many remaining terms has uniformly bounded
+$\ell^1$ norm. Its positive convolution bounds the maximal contribution of
+these initial terms, by Young.
+For every $J\geq j_0$, Proposition~\ref{prop:finiteSW} bounds the remaining
+finite dyadic sum with a constant independent of $J$.
+
+At each fixed $x$, only finitely many $y$ have $f(x-y)\ne0$. For each such
+nonzero $y$, only finitely many $j$ have $K_j(y)\ne0$, by the annular support.
+Therefore the initial contribution plus the finite dyadic sums equals
+$T_\lambda f(x)$ for all sufficiently large $J$, simultaneously for all
+$\lambda$. Its supremum is eventually exactly the desired supremum at that
+$x$. Fatou transfers the uniform finite-sum estimate to \eqref{eq:MAIN} for
+finite-support $f$.
+
+For an arbitrary $f\in\ell^p$, take its restrictions $f_R$ to increasing
+finite cubes. Lemma~\ref{lem:finite} gives $\|f_R-f\|_p\to0$ and
+$\|f_R\|_p\to\|f\|_p$. By \eqref{eq:pointwisecontinuity},
+$\sup_\lambda|T_\lambda(f_R-f)(x)|\to0$ at every $x$.
+The inequality
+$|\sup_\lambda|T_\lambda f_R(x)|-\sup_\lambda|T_\lambda f(x)||
+ \leq\sup_\lambda|T_\lambda(f_R-f)(x)|$
+therefore gives convergence of the maximal functions pointwise.
+Fatou and the already established bounds for $f_R$ yield
+\[
+ \|\sup_\lambda|T_\lambda f|\|_p
+ \leq\liminf_R C_{p,n,d,\Omega}\|f_R\|_p
+ =C_{p,n,d,\Omega}\|f\|_p.
+\]
+This is the asserted theorem. No endpoint at $p=1$ or $p=\infty$ is obtained
+by this argument or included in the statement.
+\end{proof}
+
+\section{Implementation contracts and the dependency manifest}\label{sec:implementation}
+This section restates the already proved mathematics as implementation
+contracts. It does not introduce additional analytic hypotheses. The local
+identifiers printed with the lemmas are proposed declaration names; none is
+a claim that an identically named declaration already exists in mathlib.
+
+\subsection{Concrete types and representations}
+Use \ml{Fin n} for coordinates, \ml{Fin n -> Int} for the lattice, and
+\ml{EuclideanSpace Real (Fin n)} for real space. Here \ml{->} denotes the function arrow in a type specification,
+not a claim that this printed text is compiled source. The latter
+choice is important: the default norm on a function type is not the
+Euclidean norm used by the phase. Define the lattice embedding coordinatewise
+and evaluate its Euclidean norm only after that embedding. Counting measure
+on the lattice has no nonempty null sets, so equality almost everywhere is
+pointwise equality there.
+
+Define an integer-valued polynomial first,
+\[
+ P_\Z(y)=\left(\sum_{i\in\mathrm{Fin}\ n} y_i^2\right)^d\in\Z,
+\]
+and a real-valued polynomial by the same expression on Euclidean space.
+The identity $P_\R(\iota y)=\operatorname{cast}(P_\Z(y))$ follows by moving
+the ring homomorphism through the finite sum, square and final power.
+The identity $P_\R(x)=\|x\|^{2d}$ follows from
+$\|x\|^2=\sum_i x_i^2$ and $(\|x\|^2)^d=\|x\|^{2d}$.
+This avoids reasoning about an arbitrary real power of a lattice norm in
+all arithmetic lemmas. Lemma~\ref{lem:radialcoeff} supplies the coefficient
+and congruence interfaces.
+
+Represent $\Omega$ as a total function on Euclidean space with an irrelevant
+chosen value at zero, together with smoothness on the complement of zero,
+positive-dilation invariance there, and its zero sphere integral. Define
+$K(0)=0$ by a case split. None of the differentiability statements about $K$
+includes zero. In contrast $K_j$ is globally smooth because it vanishes on a
+neighborhood of zero. The sphere measure can be implemented using the cone
+construction of Lemma~\ref{lem:dyadic}; that lemma proves its equivalence with
+the surface measure in the target specification.
+
+Represent a rational center by positive $q$, $0\leq a<q$, and $\gcd(a,q)=1$,
+then map $a/q$ to \ml{AddCircle (1 : Real)}. In a finite rational set use the
+image finite set, rather than a list that may count duplicate torus points.
+The full grids $T[q]$ can be represented by \ml{Fin q} in each coordinate.
+The block decomposition is the explicit finite bijection in
+Definition~\ref{def:blocks}, not a heuristic separation of prime factors.
+For $q=1$ it has one element and all finite character identities remain valid.
+
+\subsection{Norms, finite maxima, and operator interfaces}
+For a real exponent $p>1$ the library exponent is its image in
+$\mathbb R_{\geq0}\cup\{\infty\}$, implemented by \ml{ENNReal.ofReal p}.
+Prove first that this exponent is at least one and is not infinity.
+Use \ml{MeasureTheory.MemLp} and the extended norm while establishing
+membership. Only then pass to \ml{MeasureTheory.Lp} and its ordinary norm.
+In particular, never use conversion of an infinite extended norm to a real
+number as a substitute for a finiteness proof.
+
+A safe finite version of every lattice maximal estimate is
+\[
+ \sum_{x\in E_0}\left(\max_{a\in F}|T_a f(x)|\right)^p
+             \leq C^p\sum_{x\in G}|f(x)|^p,
+\]
+for arbitrary finite output sets $E_0$ and finite parameter sets $F$.
+Include zero in the maximum to give the empty set value zero.
+Lemma~\ref{lem:finite} passes from these bounds to the full supremum.
+For the final operator, Lemma~\ref{lem:absolute} already supplies pointwise
+boundedness in the parameter; its real supremum is therefore a legitimate
+conditionally complete-lattice supremum. It also identifies that supremum
+with the countable rational one.
+
+Implement the Euclidean and torus multipliers first on $L^2$ by the Fourier
+isometries. An assertion that a bounded measurable symbol is an $L^p$
+multiplier of norm at most $A$ means that its $L^2$ action on Schwartz inputs
+satisfies the stated $L^p$ inequality. The density and extension lemma then
+constructs its bounded $L^p$ action. When two such extensions agree on
+Schwartz functions, their difference vanishes on a dense set and hence on
+the entire space by continuity. On the lattice use finite-support functions
+as the dense common domain. This is the identification used for all kernel,
+periodization and multiplier factorizations in the proof.
+
+Hilbert-valued estimates only require finite products of $\C$. For an
+index set $I$ carry the Euclidean norm
+$(\sum_{i\in I}|z_i|^2)^{1/2}$ explicitly, rather than the default supremum
+norm on a function type. Lemmas~\ref{lem:interpolation} and
+\ref{lem:khintchine} apply uniformly to these finite products; no theorem
+about infinite-dimensional vector-valued singular integrals is needed.
+
+For a finite family, implement linearization by an ordered argmax, with ties
+resolved by the least index. The selected map depends on the input used to
+choose it, but after selection it is held fixed while forming the linear
+operator and its adjoint. The uniform $TT^*$ estimates quantify over every
+such fixed selection. Thus there is no claim that the maximal operator
+itself is linear. In Euclidean space the selection is measurable because its
+fibers are finite intersections of comparisons of measurable absolute values.
+On the lattice measurability is automatic.
+
+\subsection{The final declaration contract}
+The mathematical contract for \ml{discrete_stein_wainger_lp} is the following;
+it is a specification, not purportedly compiled Lean syntax.
+\begin{quote}
+For positive natural numbers $n,d$, admissible $\Omega$, and real $p>1$,
+there exists a real $C\geq0$ such that for every function
+$f:(\mathrm{Fin}\ n\to\Z)\to\C$ with $\operatorname{MemLp}(f,p,\mathrm{count})$,
+the maximal function $\mathcal C f$ belongs to
+$L^p(\mathrm{count};\R)$ and
+\[
+ \operatorname{eLpNorm}(\mathcal C f,p,\mathrm{count})
+ \leq \operatorname{ofReal}(C)\,
+                   \operatorname{eLpNorm}(f,p,\mathrm{count}).
+\]
+Here the defining series is summable by Lemma~\ref{lem:absolute}, the phase
+uses the cast of $P_\Z$, and $\mathcal C f$ is the scalar-parameter supremum
+of its complex absolute value.
+\end{quote}
+The membership conclusion is essential: it excludes a vacuous inequality
+obtained by coercing an infinite norm to zero. Since counting measure has
+only the empty null set, the resulting representative agrees at every
+lattice point with the series-defined maximal function.
+
+\subsection{Constant choice and termination of dependencies}
+The constants are selected in this order:
+\[
+ (n,d,\Omega,p)\ ;\ r\ ;\ \kappa\ ;\ (u,v,b,M,j_1)\ ;\ \rho\ ;\
+ C_*\ ;\ (\gamma,\delta_p)\ ;\ C_1\ ;\ (\theta_p,b_p,\sigma_p,C_2,c_p)\ ;\ j_0.
+\]
+The exponent $\sigma_p$ can already be read from
+Lemma~\ref{lem:continuousband}; listing it at its use does not make it depend
+on later constants. All parameter choices are justified by explicit
+inequalities in the corresponding constructions. $M$ is chosen only after
+the minor-arc counting exponents, whereas $j_0$ is chosen only after the
+smoothing scales. This avoids the circular condition of choosing a cutoff
+narrowness from a lower-scale threshold that itself depends on that cutoff.
+The positive gains $\gamma,\delta_p,\theta_p,b_p,c_p$ need not be optimized;
+the final summation uses only their strict positivity.
+
+The inverse-sum proof uses a finite induction on the degree, not a recursive
+appeal to the final theorem. Its polynomial-loss convention can be expanded
+mechanically: associate a pair $(C,A)$ to a bound $C\delta^{-A}$, add
+exponents when multiplying bounds, take the maximum exponent and add
+constants for sums, and multiply both exponents and logarithms of constants
+for fixed powers. Each occurrence of ``sufficiently large $N$'' in that
+finite induction is an explicit comparison $N\geq C\delta^{-A}$.
+The complementary small-$N$ case is handled at the start of the induction
+by the trivial torus-distance bound $1/2$. No limiting induction or
+ineffective compactness theorem is hidden in that convention.
+
+\subsection{Integrability and limit register}
+There are four distinct convergence operations, each with an already proved
+majorant or norm bound. Finite lattice annular kernels and finite rational
+sums need no convergence argument. Infinite sums involving the Schwartz
+cutoffs have absolute polynomial-decay majorants, as in
+Lemmas~\ref{lem:periodic} and \ref{lem:liftkernel}. The whole real singular
+kernel and the signed smoothing errors use the $L^2$/Fatou limit in
+Lemma~\ref{lem:signedK} and the absolutely $L^1$-convergent series
+\eqref{eq:EJseries}. Maxima over infinitely many scales or parameter values
+use finite-family estimates and Lemma~\ref{lem:finite}, with countable
+parameter density only on Euclidean space. Finally the original operator
+on all of $\ell^p$ uses the absolute pointwise series and the uniform
+parameter estimate \eqref{eq:pointwisecontinuity}.
+
+The integral manipulations in the long-truncation averaging argument are
+finite averages of nonnegative $p$th powers followed by lattice sums.
+They are justified by Tonelli even before their bound is known. The changes
+of variables are the explicit finite-residue bijections in that proof.
+They are not exchanges of a supremum with an oscillatory infinite integral.
+
+\subsection{Dependency index}
+The following index records the principal direct numbered dependencies.
+The elementary library boundary F1--F5, preceding definitions, and elementary
+algebraic manipulations are implicit. References always point to earlier
+proof nodes; the table itself is only a navigation aid.
+
+\begingroup
+\small
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{@{}p{.48\textwidth}p{.47\textwidth}@{}}
+\toprule
+Proof node & Principal earlier dependencies \\
+\midrule
+\endfirsthead
+\toprule
+Proof node & Principal earlier dependencies \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize Continued on the next page.}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\ref{lem:finite}. Finite reductions & F3, F4 \\
+\ref{lem:young}. Convolution, duality, subsequences & F3, F4 \\
+\ref{lem:interpolation}. Distributional interpolation & \ref{lem:young} \\
+\ref{lem:maximal}. Maximal function and envelopes & \ref{lem:interpolation} \\
+\ref{lem:ttstar}. Hilbert-space kernel bounds & \ref{lem:finite}, \ref{lem:young} \\
+\ref{lem:khintchine}. Randomization and square functions & F1, F3, F4 \\
+\ref{lem:binary}. Binary decomposition & F1 \\
+\ref{lem:radialcoeff}. Radial polynomial coefficients & F1, F2 \\
+\ref{lem:divisor}. Divisor and progression counts & F1 \\
+\ref{lem:multiples}. Approximate multiples & F1 \\
+\ref{lem:inverseweyl}. Inverse exponential sum & \ref{lem:multiples} \\
+\ref{lem:weylcor}. Weighted slicing and rational gain & \ref{lem:inverseweyl} \\
+\ref{lem:gauss}. Quadratic sums & F1 \\
+\ref{lem:periodic}. Periodic averaging & \ref{lem:divisor} \\
+\ref{lem:dyadic}. Polar integration and dyadic kernels & F1--F4 \\
+\ref{lem:cz}. Integrable singular kernels & \ref{lem:young}, \ref{lem:interpolation} \\
+\ref{lem:signedK}. Signed dyadic multipliers & \ref{lem:dyadic}, \ref{lem:cz}, \ref{lem:young} \\
+\ref{con:phi}. Positive low-frequency averaging & F4, F5 \\
+\ref{lem:smootherrors}. Signed smoothing errors & \ref{lem:dyadic}, \ref{lem:cz}, \ref{lem:signedK}, \ref{con:phi} \\
+\ref{lem:oscint}. Polynomial oscillatory integrals & F1, F2 \\
+\ref{lem:radialFourier}. Radial stationary bounds & \ref{lem:radialcoeff}, \ref{lem:dyadic} \\
+\ref{lem:continuousband}. Continuous annular decay & \ref{lem:radialcoeff}, \ref{lem:dyadic}, \ref{lem:oscint}, \ref{lem:ttstar}, \ref{lem:maximal}, \ref{lem:interpolation} \\
+\ref{lem:fourierbook}. Fourier bookkeeping & F1, F3--F5 \\
+\ref{lem:sampling}. Sampling and full grids & \ref{lem:young}, \ref{lem:fourierbook} \\
+\ref{def:blocks}. Coprime-block rational sets & \ref{lem:divisor} \\
+\ref{lem:superorth}. Singleton superorthogonality & \ref{lem:khintchine} \\
+\ref{lem:sunflower}. Weighted sunflower inequality & F1, F3 \\
+\ref{lem:blockorthog}. Block and numerator orthogonality & \ref{def:blocks}, \ref{lem:fourierbook} \\
+\ref{lem:normdescription}. Rational norm description & \ref{lem:superorth}, \ref{lem:sunflower}, \ref{lem:blockorthog} \\
+\ref{lem:companion}. Companion projection bound & \ref{def:blocks}, \ref{lem:blockorthog}, \ref{lem:interpolation}, \ref{lem:fourierbook} \\
+\ref{thm:IW}. Rational-frequency transference & \ref{lem:sampling}, \ref{lem:normdescription}, \ref{lem:companion}, \ref{lem:khintchine}, \ref{lem:young}, \ref{lem:interpolation} \\
+\ref{con:goodset}. Good denominator set & \ref{def:blocks}, \ref{thm:IW} \\
+\ref{lem:minorL2}. Minor-arc Hilbert-space decay & \ref{lem:dyadic}, \ref{lem:radialcoeff}, \ref{lem:weylcor}, \ref{lem:multiples}, \ref{lem:ttstar}, \ref{lem:finite} \\
+\ref{con:parameters}. Exponent and logarithmic scale & \ref{lem:minorL2}, \ref{lem:interpolation}, \ref{lem:dyadic}, \ref{con:goodset} \\
+\ref{lem:liftkernel}. Exact physical lifting identity & \ref{lem:fourierbook}, \ref{lem:radialcoeff} \\
+\ref{lem:arithmax}. Arithmetic maximal decay & \ref{lem:liftkernel}, \ref{lem:periodic}, \ref{lem:weylcor}, \ref{lem:gauss}, \ref{lem:divisor}, \ref{lem:maximal}, \ref{lem:ttstar}, \ref{lem:interpolation} \\
+\ref{lem:liftsquare}. Lifted square estimates & \ref{lem:arithmax}, \ref{thm:IW}, \ref{con:goodset}, \ref{lem:khintchine} \\
+\ref{lem:liftenvelope}. Lifted positive envelopes & \ref{lem:liftkernel}, \ref{lem:maximal}, \ref{lem:dyadic} \\
+\ref{lem:lifttrunc}. Lifted maximal truncation & \ref{lem:binary}, \ref{lem:signedK}, \ref{lem:smootherrors}, \ref{con:phi}, \ref{lem:liftsquare}, \ref{lem:sampling}, \ref{lem:maximal}, \ref{lem:fourierbook} \\
+\ref{lem:middleband}. Uniform band gain & \ref{lem:liftsquare}, \ref{lem:radialFourier}, \ref{lem:liftenvelope}, \ref{lem:interpolation} \\
+\ref{lem:highband}. High-band analytic gain & \ref{lem:continuousband}, \ref{lem:sampling} \\
+\ref{thm:liftedSW}. Lifted partial sums & \ref{lem:lifttrunc}, \ref{lem:middleband}, \ref{lem:highband}, \ref{lem:liftenvelope}, \ref{lem:maximal}, \ref{lem:finite} \\
+\ref{lem:kernelerror}. Kernel-side approximation & \ref{lem:dyadic}, \ref{lem:liftkernel} \\
+\ref{lem:coherence}. Final scale and coherent arcs & \ref{lem:divisor}, \ref{con:parameters} \\
+\ref{prop:finiteSW}. Uniform finite dyadic estimate & \ref{con:parameters}, \ref{lem:kernelerror}, \ref{lem:coherence}, \ref{thm:liftedSW}, \ref{lem:young}, \ref{lem:finite} \\
+\ref{lem:absolute}. Pointwise absolute convergence & \ref{lem:dyadic}, \ref{lem:young} \\
+\ref{thm:main}. The final maximal theorem & \ref{prop:finiteSW}, \ref{lem:absolute}, \ref{lem:dyadic}, \ref{lem:finite}, \ref{lem:young} \\
+\end{longtable}
+\endgroup
+
+\subsection{Specification audit and library entry points}
+The two source papers are used to specify the target operator and its
+hypotheses, not as unproved lemmas in the dependency graph. In particular,
+the $\ell^2$ case is derived above as part of the finite-$p$ argument; it is
+not imported from the first paper. The real annular maximal estimate,
+arithmetic inverse estimate, coprime-block transference, and lifted maximal
+truncation each have their own proof before use.
+
+Three features of the specification are worth preserving in an implementation.
+First, the parameter is a scalar real number; its reduction modulo one uses
+that $P_\Z(y)$ is an integer. Second, homogeneity and zero spherical mean
+are used for \emph{every} radially modulated annulus in
+\eqref{eq:radialcancel}, not merely for the unmodulated kernel. Third, the
+conclusion is for finite $p>1$. The argument does not assert an $\ell^\infty$
+endpoint. In particular, one must not replace maximal-function control of
+annular envelopes by an assertion that the supremum of all annular kernels
+is summable.
+
+\textbf{Target specifications.}
+Ben Krause and Joris Roos,
+\emph{Discrete analogues of maximally modulated singular integrals of
+Stein--Wainger type}, version 3, 17 March 2021:
+\url{https://arxiv.org/abs/1907.00405v3}.
+The same authors,
+\emph{Discrete analogues of maximally modulated singular integrals of
+Stein--Wainger type: $\ell^p$ bounds for $p>1$}, version 2, 23 July 2023:
+\url{https://arxiv.org/abs/2107.14616v2}.
+These bibliographic entries identify the problem, and are not additional
+proof dependencies.
+
+\textbf{Mathlib boundary documentation.}
+The following entry points locate the imported Fourier, approximation, and
+integral-norm material. Exact declarations named in Section~1 were checked
+against these pages. Their hypotheses still have to be instantiated with
+the measures, normalizations, and finite-dimensional spaces of this document.
+\begin{flushleft}\small
+\url{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Analysis/Fourier/LpSpace.html}\par
+\url{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Analysis/Fourier/AddCircleMulti.html}\par
+\url{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Analysis/Distribution/SchwartzSpace/Basic.html}\par
+\url{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/MeanInequalities.html}
+\end{flushleft}
+The elementary calculus, integration, algebra, and bump-function facts listed
+in F1--F4 are the rest of the permitted library boundary. No use of a
+literature theorem is implicit in a local blueprint identifier.
+
+\textbf{Verification boundary.}
+This is a proposed mathematical formalization blueprint. The dependency order,
+finite-family reductions, convergence obligations, and declaration contracts
+are explicit. It is not a Lean proof certificate, and no claim is made that
+Lean has checked the estimates or that the proposed declaration names exist
+in mathlib. A formal implementation should pin a mathlib revision, discharge
+the nodes in the displayed order, and only then export the final declaration.
+
+\end{document}
