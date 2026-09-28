@@ -5,7 +5,7 @@
 
 status | exact source location | brief mathematical step | timestamp
 --- | --- | --- | ---
-not started | thm:main (T13.2), eq. (13.1) | statement: ℓ^p bound for the discrete Stein–Wainger maximal operator, 1<p<∞ | 2026-09-27T12:22:47-04:00
+complete | thm:main (T13.2), eq. (13.2) | statement: ℓ^p bound for the discrete Stein–Wainger maximal operator, 1<p<∞ | 2026-09-28T07:36:18-04:00
 
 ## Reusable prerequisite: Marcinkiewicz interpolation theorem (`DiscreteSW/Auto/MarcinkiewiczInterpolation.lean`)
 
@@ -181,6 +181,6 @@ complete | lem:coherence (L12.2) | choice of j₀ and interval coherence | 2026-
 complete | prop:finiteSW (P12.3) | minor part | 2026-09-28T07:10:08-04:00
 complete | prop:finiteSW (P12.3) | major smoothing errors | 2026-09-28T07:10:08-04:00
 complete | prop:finiteSW (P12.3), eq. (12.2) | main terms grouped by s; conclusion | 2026-09-28T07:10:08-04:00
-in progress | lem:absolute (L13.1), eq. (13.1) | absolute convergence, continuity, periodicity, pointwise continuity bound | 2026-09-28T07:10:08-04:00
-not started | thm:main (T13.2) | finite-support inputs | 2026-09-27T12:22:47-04:00
-not started | thm:main (T13.2), eq. (13.2) | all ℓ^p inputs; final theorem | 2026-09-27T12:22:47-04:00
+complete | lem:absolute (L13.1), eq. (13.1) | absolute convergence, continuity, periodicity, pointwise continuity bound | 2026-09-28T07:36:18-04:00
+complete | thm:main (T13.2) | finite-support inputs | 2026-09-28T07:36:18-04:00
+complete | thm:main (T13.2), eq. (13.2) | all ℓ^p inputs; final theorem | 2026-09-28T07:36:18-04:00

@@ -21,6 +21,8 @@
 - (R8, raw entry R8) One-off: commit, push and continue. Commit `db31ce5` (through Lemma 6.1) pushed to
   `origin` (`https://github.com/roos-j/lean-discretesw.git`, branch `main`, remote added by the user).
 - (R9, raw entry R9) One-off: commit, push and continue (through Proposition 12.3).
+- (R10, raw entry R10) Commit and push the finished formalization; then remove all Lean compiler and
+  linter warnings by fixing their source (not by disabling options/linters); then commit and push again.
 
 Raw prompts are logged in `automation/raw.md` (Git-ignored).
 
@@ -83,13 +85,15 @@ Here `K y = Ω y / ‖y‖^n`, `P_ℤ(y) = (∑ yᵢ²)^d`, `e(t) = exp(2πit)`.
 
 ## Latest verification
 
-- 2026-09-27T16:46:13-04:00: `lake build` succeeded (Lean/Mathlib v4.35.0-rc3). Completed and axiom-checked
-  (`propext`, `Classical.choice`, `Quot.sound` only): §2 (Lemmas 2.1–2.7, `Tools.lean` plus the
-  prerequisites `MarcinkiewiczInterpolation.lean`, `HardyLittlewoodMaximal.lean`,
-  `KhintchineInequality.lean`) and §3 (Lemmas 3.1–3.7, `Arithmetic.lean`).
+- 2026-09-28T07:36:18-04:00: clean `lake build` (DiscreteSW build products removed first) succeeded on Lean/Mathlib
+  v4.35.0-rc3 with no errors or warnings; no `sorry`/`admit`/`axiom`/`native_decide` in any module;
+  `#print axioms Auto.discrete_stein_wainger_lp` = `[propext, Classical.choice, Quot.sound]`.
+  Every row of `automation/Status.md` is complete (§2–§13 and the four reusable prerequisites).
+- Target `Auto.discrete_stein_wainger_lp` (`DiscreteSW/Auto/DiscreteSteinWainger.lean`) is stated exactly
+  as the contract above; `Foundations.lean` definitions unchanged since commit `5587aa6`.
 - Note (Mathlib v4.35): `eLpNorm f p μ = ∞` when `f` is not a.e. strongly measurable.
 
 ## Next step
 
-- Lemma 4.1 (`lem:dyadic`) in `DiscreteSW/Auto/RealVariable.lean` (in progress), then Lemma 4.2
-  (Calderón–Zygmund; candidate reusable prerequisite, Mathlib has no CZ theory).
+- R10 warning cleanup (fix sources; do not disable linters). Afterwards: maintenance only (keep building on Mathlib
+  updates). Discrepancies and route changes are listed in `automation/ErrorReport.md`.
