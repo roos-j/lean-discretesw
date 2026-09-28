@@ -119,21 +119,21 @@ complete | lem:smootherrors (L4.5), eq. (4.6) | series identity for E_J in L¹, 
 complete | lem:smootherrors (L4.5), eq. (4.5) | decay bound for ‖x‖ ≤ 16R | 2026-09-27T19:06:27-04:00
 complete | lem:smootherrors (L4.5), eq. (4.5) | decay bound for ‖x‖ > 16R | 2026-09-27T19:06:27-04:00
 complete | lem:smootherrors (L4.5) | uniform L^p bound for finite signed sums ∑ c_J E_J | 2026-09-27T19:06:27-04:00
-in progress | lem:oscint (L5.1) | polynomial sublevel set bound | 2026-09-27T19:06:27-04:00
-not started | lem:oscint (L5.1) | one-dimensional oscillatory integral bound L^(-1/m) | 2026-09-27T12:22:47-04:00
-not started | lem:oscint (L5.1) | box/slice version via Fubini | 2026-09-27T12:22:47-04:00
-not started | lem:radialFourier (L5.2) | scaling formula Φ_(j,μ)(ξ) = Ψ(μ2^(Dj), 2^jξ); vanishing at η = 0 | 2026-09-27T12:22:47-04:00
-not started | lem:radialFourier (L5.2) | non-stationary integration by parts mechanism | 2026-09-27T12:22:47-04:00
-not started | lem:radialFourier (L5.2), eq. (5.1) | regions ‖η‖ ≤ c‖t‖, ‖η‖ ≥ C‖t‖, and bounded t | 2026-09-27T12:22:47-04:00
-not started | lem:radialFourier (L5.2), eq. (5.1) | stationary region C‖t‖^(-n/2) | 2026-09-27T12:22:47-04:00
-not started | lem:radialFourier (L5.2), eqs. (5.2),(5.3) | square-sum bounds | 2026-09-27T12:22:47-04:00
-not started | lem:continuousband (L5.3) | domination 𝔥_T f ≤ C𝖬f | 2026-09-27T12:22:47-04:00
-not started | lem:continuousband (L5.3) | TT* kernel bounds (two scale regimes) | 2026-09-27T12:22:47-04:00
-not started | lem:continuousband (L5.3) | L² decay T^(-1/(4D)) | 2026-09-27T12:22:47-04:00
-not started | lem:continuousband (L5.3) | interpolation and passage to the full supremum | 2026-09-27T12:22:47-04:00
-not started | lem:fourierbook (L6.1) | periodization coefficients; rapid decay for smooth m | 2026-09-27T12:22:47-04:00
-not started | lem:fourierbook (L6.1) | Fourier support of products; vanishing sums; orthogonality | 2026-09-27T12:22:47-04:00
-not started | lem:sampling (L6.2) | Euclidean-to-lattice transfer of maximal multiplier bounds | 2026-09-27T12:22:47-04:00
+complete | lem:oscint (L5.1) | polynomial sublevel set bound | 2026-09-27T19:29:28-04:00
+complete | lem:oscint (L5.1) | one-dimensional oscillatory integral bound L^(-1/m) | 2026-09-27T19:29:28-04:00
+complete | lem:oscint (L5.1) | box/slice version via Fubini | 2026-09-27T19:29:28-04:00
+complete | lem:radialFourier (L5.2) | scaling formula Φ_(j,μ)(ξ) = Ψ(μ2^(Dj), 2^jξ); vanishing at η = 0 | 2026-09-27T20:03:35-04:00
+complete | lem:radialFourier (L5.2) | non-stationary integration by parts mechanism | 2026-09-27T20:03:35-04:00
+complete | lem:radialFourier (L5.2), eq. (5.1) | regions ‖η‖ ≤ c‖t‖, ‖η‖ ≥ C‖t‖, and bounded t | 2026-09-27T20:03:35-04:00
+complete | lem:radialFourier (L5.2), eq. (5.1) | stationary region C‖t‖^(-n/2) | 2026-09-27T20:35:12-04:00
+complete | lem:radialFourier (L5.2), eqs. (5.2),(5.3) | square-sum bounds | 2026-09-27T20:35:12-04:00
+complete | lem:continuousband (L5.3) | domination 𝔥_T f ≤ C𝖬f | 2026-09-27T21:44:41-04:00
+complete | lem:continuousband (L5.3) | TT* kernel bounds (two scale regimes) | 2026-09-27T21:44:41-04:00
+complete | lem:continuousband (L5.3) | L² decay T^(-1/(4D)) | 2026-09-27T21:44:41-04:00
+complete | lem:continuousband (L5.3) | interpolation and passage to the full supremum | 2026-09-27T21:44:41-04:00
+complete | lem:fourierbook (L6.1) | periodization coefficients; rapid decay for smooth m | 2026-09-27T22:09:50-04:00
+complete | lem:fourierbook (L6.1) | Fourier support of products; vanishing sums; orthogonality | 2026-09-27T22:09:50-04:00
+in progress | lem:sampling (L6.2) | Euclidean-to-lattice transfer of maximal multiplier bounds | 2026-09-27T22:09:50-04:00
 not started | lem:sampling (L6.2) | Δ_q m bound uniform in q | 2026-09-27T12:22:47-04:00
 not started | def:blocks (D7.1), eq. (7.1) | coprime block decomposition bijection; separation | 2026-09-27T12:22:47-04:00
 not started | lem:superorth (L7.2) | singleton superorthogonality, single index | 2026-09-27T12:22:47-04:00

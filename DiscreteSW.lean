@@ -8,5 +8,7 @@ import DiscreteSW.Auto.DiscreteSteinWainger
 import DiscreteSW.Auto.HardyLittlewoodMaximal
 import DiscreteSW.Auto.KhintchineInequality
 import DiscreteSW.Auto.MarcinkiewiczInterpolation
+import DiscreteSW.Auto.Oscillation
 import DiscreteSW.Auto.RealVariable
+import DiscreteSW.Auto.Sampling
 import DiscreteSW.Auto.Tools

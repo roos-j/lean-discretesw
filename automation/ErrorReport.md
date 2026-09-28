@@ -45,3 +45,13 @@
   derivatives are used downstream); decay bounds proved via `E_J = (𝒦_J − φ_J⋆𝒦_J) − ∑_{1≤j<J} φ_J⋆K_j`
   with a second-order Taylor bound instead of the three-group case split; the Fourier bound is derived
   from the identity `Ê_J = m_{≥J} − τ_J m_K`. Resolved (route change).
+- 2026-09-27T20:35:12-04:00 — Lemma 5.2 (`lem:radialFourier`): stationary region proved by rescaling each dyadic shell
+  around the critical point `z₀` and applying a compact-family nonstationary-phase lemma along the radial
+  field (strong monotonicity of `x ↦ ‖x‖^m x`), instead of integrating by parts along `∇F/|∇F|²` with
+  explicit ρ-dependent bounds; the (5.1) regions are proved for the amplitudes `K₀` and `2πiP K₀`
+  (Mathlib Fourier sign). Resolved (route change).
+- 2026-09-27T21:44:41-04:00 — Lemma 5.3 (`lem:continuousband`): the far-scale TT* case is proved with `T^{-1/(2D)}`
+  (blueprint states `T^{-1/D}`; only `T^{-1/(2D)}` is used in the final kernel bound); the full
+  supremum is reached by a clamped rational parametrization of admissible `μ` and continuity, for every
+  `f ∈ L^p` directly (no Schwartz density step); σ_p = (2D)^{-1} min(1/p, 1/p') as in the blueprint.
+  Resolved.

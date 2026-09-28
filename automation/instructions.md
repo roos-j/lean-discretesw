@@ -15,6 +15,9 @@
   and build with the latest Lean version. **Supersedes the dependency part of R2** (the file-split
   authorization of R2 stays).
 - (R4, raw entry R4) "Latest lean" means the latest release candidate: `v4.35.0-rc3` (Lean and Mathlib tag).
+- (R5–R7, raw entries R5–R7) One-off authorization to commit and push the current state, then
+  continue; add `*.lock` to `.gitignore`. Commit `5587aa6` made (verified modules only); push not
+  possible: the repository has no remote configured. No standing commit authorization.
 
 Raw prompts are logged in `automation/raw.md` (Git-ignored).
 
@@ -63,6 +66,12 @@ Here `K y = Ω y / ‖y‖^n`, `P_ℤ(y) = (∑ yᵢ²)^d`, `e(t) = exp(2πit)`.
 - Fourier transform: Mathlib's convention `𝓕 h(ξ) = ∫ h(x) e(-x·ξ) dx` (blueprint uses the opposite sign;
   equivalent by reflection, see `ErrorReport.md`). Euclidean `L^p` multiplier statements are for Schwartz
   inputs `f ↦ 𝓕⁻ (m • 𝓕 f)` (blueprint §14.2), then extended by density where needed.
+- Lattice/torus Fourier analysis (§6 onward, `Sampling.lean`): Mathlib sign throughout. Torus symbols are
+  1-periodic functions `m : E → ℂ` integrated over the unit cube `[0,1)ⁿ` (Lebesgue, mass one);
+  `latFT f ξ = ∑ f z e(-z·ξ)`, `latMult m f x = ∫_cube m ξ latFT f ξ e(x·ξ) dξ` for finitely supported `f`;
+  kernel `latKernel m y = ∫_cube m ξ e(y·ξ) dξ`; periodization `m_per ξ = ∑_k m(ξ - k)` has
+  `latKernel m_per y = 𝓕⁻ m y`. Blueprint objects with the `+` sign are transported by `ξ ↦ -ξ`
+  (e.g. the Gauss sums `S(α,β)` get the matching sign).
 
 ## Toolchain and build
 
