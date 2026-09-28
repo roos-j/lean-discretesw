@@ -75,3 +75,7 @@
 - 2026-09-28T05:31:24-04:00 — Lemma 10.1 (`lem:lifttrunc`): Mathlib sign (`e(−u·ξ)`, `e(x·β)`); the Minkowski average over
   `𝒱_s` is replaced by choosing a `u` whose shifted main term is at most the average; pointwise bounds
   hold for all `J` at once (no finite-`J` step). Resolved (route change).
+- 2026-09-28T08:02:57-04:00 — Layout (R11): the section modules were merged into `DiscreteSW/Auto/DiscreteSteinWainger.lean`;
+  file names such as `Tools.lean` in earlier entries now refer to the corresponding sections. Lemma 2.1's
+  Fatou step, Lemma 2.2 (Young, dual testing) and the envelope helpers of Lemma 2.4 now live in the
+  prerequisite `CalderonZygmund.lean` ("Supporting results") to avoid an import cycle. Resolved.

@@ -5,6 +5,7 @@ defaultTargets = ["DiscreteSW"]
 [leanOptions]
 pp.unicode.fun = true
 autoImplicit = false
+weak.linter.mathlibStandardSet = true
 
 [[require]]
 name = "mathlib"
