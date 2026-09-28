@@ -3,11 +3,13 @@ Copyright (c) 2026 Joris Roos. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Claude
 -/
-import DiscreteSW.Auto.CalderonZygmund
-import DiscreteSW.Auto.DiscreteSteinWainger
-import DiscreteSW.Auto.HardyLittlewoodMaximal
-import DiscreteSW.Auto.KhintchineInequality
-import DiscreteSW.Auto.MarcinkiewiczInterpolation
+module
+
+public import DiscreteSW.Auto.CalderonZygmund
+public import DiscreteSW.Auto.DiscreteSteinWainger
+public import DiscreteSW.Auto.HardyLittlewoodMaximal
+public import DiscreteSW.Auto.KhintchineInequality
+public import DiscreteSW.Auto.MarcinkiewiczInterpolation
 
 /-!
 # The `DiscreteSW` library

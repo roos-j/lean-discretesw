@@ -3,9 +3,11 @@ Copyright (c) 2026 Joris Roos. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Claude
 -/
-import Mathlib
-import DiscreteSW.Auto.HardyLittlewoodMaximal
-import DiscreteSW.Auto.MarcinkiewiczInterpolation
+module
+
+public import Mathlib
+public import DiscreteSW.Auto.HardyLittlewoodMaximal
+public import DiscreteSW.Auto.MarcinkiewiczInterpolation
 
 /-!
 # The Calderón–Zygmund theorem for convolution operators with integrable kernels
@@ -105,6 +107,9 @@ also used by the main development (`DiscreteSW/Auto/DiscreteSteinWainger.lean`):
 * L. Grafakos, *Classical Fourier Analysis*, 3rd ed., Graduate Texts in Mathematics 249,
   Springer, 2014, §5.3.
 -/
+
+@[expose] public section
+
 
 open MeasureTheory Metric Set Filter Topology
 open scoped ENNReal NNReal Convolution ComplexConjugate

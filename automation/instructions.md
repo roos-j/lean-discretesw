@@ -77,14 +77,14 @@ Here `K y = Ω y / ‖y‖^n`, `P_ℤ(y) = (∑ yᵢ²)^d`, `e(t) = exp(2πit)`.
 
 - `lean-toolchain`: `leanprover/lean4:v4.35.0-rc3`; Mathlib `v4.35.0-rc3`, pinned in `lake-manifest.json`.
 - Build: `lake build`. Single file: `lake env lean DiscreteSW/Auto/DiscreteSteinWainger.lean`.
+- Module system (R16, done): every file is a `module` with `public import`s and `@[expose] public section`.
 - Linters: Mathlib standard set enabled (`weak.linter.mathlibStandardSet = true`, R13); keep 0 warnings.
 
 ## Latest verification
 
-- 2026-09-28T07:36:18-04:00: clean `lake build` (DiscreteSW build products removed first) succeeded on Lean/Mathlib
-  v4.35.0-rc3 with no errors or warnings; no `sorry`/`admit`/`axiom`/`native_decide` in any module;
-  `#print axioms Auto.discrete_stein_wainger_lp` = `[propext, Classical.choice, Quot.sound]`.
-  Every row of `automation/Status.md` is complete (§2–§13 and the four reusable prerequisites).
+- 2026-09-28T08:21:14-04:00: after the module-system migration, `lake build` succeeded with 0 warnings (Mathlib standard
+  linter set on); `#print axioms Auto.discrete_stein_wainger_lp` = `[propext, Classical.choice, Quot.sound]`;
+  no `sorry`/`admit`/`axiom`/`native_decide`. Every row of `automation/Status.md` is complete.
 - Target `Auto.discrete_stein_wainger_lp` (`DiscreteSW/Auto/DiscreteSteinWainger.lean`) is stated exactly
   as the contract above; `Foundations.lean` definitions unchanged since commit `5587aa6`.
 - Note (Mathlib v4.35): `eLpNorm f p μ = ∞` when `f` is not a.e. strongly measurable.
@@ -111,5 +111,5 @@ Here `K y = Ω y / ‖y‖^n`, `P_ℤ(y) = (∑ yᵢ²)^d`, `e(t) = exp(2πit)`.
 - (R16, raw entry R16) Migrate the whole repo to Lean's module system (`module`, `public import`, …)
   and update the skill (both editions) to use the module system from the start; then commit and push.
 - R10 result: with the project's configuration (Lean default linters) every module has 0 warnings.
-- Next: R16 module-system migration, then maintenance only (keep building on Mathlib
+- Maintenance only (keep building on Mathlib
   updates). Discrepancies and route changes are listed in `automation/ErrorReport.md`.

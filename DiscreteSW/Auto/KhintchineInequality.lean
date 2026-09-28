@@ -3,7 +3,9 @@ Copyright (c) 2026 Joris Roos. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Claude
 -/
-import Mathlib
+module
+
+public import Mathlib
 
 /-!
 # Khintchine's inequality and the Marcinkiewicz–Zygmund `ℓ²`-valued extension
@@ -49,6 +51,9 @@ moment, the fourth-moment bound `𝔼 ‖∑ ε_i v_i‖⁴ ≤ 25 S²` and a Pa
   Fund. Math. 32 (1939) 115–121.
 * L. Grafakos, *Classical Fourier Analysis*, 3rd ed., GTM 249, Appendix C and §5.5.
 -/
+
+@[expose] public section
+
 
 open scoped BigOperators ENNReal NNReal
 open MeasureTheory

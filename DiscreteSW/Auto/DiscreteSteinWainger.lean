@@ -3,11 +3,13 @@ Copyright (c) 2026 Joris Roos. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Claude
 -/
-import Mathlib
-import DiscreteSW.Auto.MarcinkiewiczInterpolation
-import DiscreteSW.Auto.HardyLittlewoodMaximal
-import DiscreteSW.Auto.KhintchineInequality
-import DiscreteSW.Auto.CalderonZygmund
+module
+
+public import Mathlib
+public import DiscreteSW.Auto.MarcinkiewiczInterpolation
+public import DiscreteSW.Auto.HardyLittlewoodMaximal
+public import DiscreteSW.Auto.KhintchineInequality
+public import DiscreteSW.Auto.CalderonZygmund
 
 /-!
 # The discrete Stein–Wainger maximal operator
@@ -55,6 +57,9 @@ Four self-contained, reusable results are proved in separate files:
   inequality and dual testing of Blueprint Lemma 2.2, Fatou's lemma for `L^p` norms, and the
   envelope `B_R` of Blueprint Lemma 2.4).
 -/
+
+@[expose] public section
+
 
 namespace Auto
 

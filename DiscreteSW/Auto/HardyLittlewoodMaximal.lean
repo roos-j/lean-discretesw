@@ -3,8 +3,10 @@ Copyright (c) 2026 Joris Roos. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Claude
 -/
-import Mathlib
-import DiscreteSW.Auto.MarcinkiewiczInterpolation
+module
+
+public import Mathlib
+public import DiscreteSW.Auto.MarcinkiewiczInterpolation
 
 /-!
 # The Hardy–Littlewood maximal theorem
@@ -69,6 +71,9 @@ statements depend on Mathlib only (the proofs also use
 * L. Grafakos, *Classical Fourier Analysis*, 3rd ed., Graduate Texts in Mathematics 249,
   Springer, 2014, Theorem 2.1.6.
 -/
+
+@[expose] public section
+
 
 open MeasureTheory Metric Set Filter Topology
 open scoped ENNReal NNReal

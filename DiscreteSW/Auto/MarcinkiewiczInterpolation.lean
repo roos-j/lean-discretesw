@@ -3,7 +3,9 @@ Copyright (c) 2026 Joris Roos. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Claude
 -/
-import Mathlib
+module
+
+public import Mathlib
 
 /-!
 # The Marcinkiewicz interpolation theorem
@@ -67,6 +69,9 @@ integrals are `∫_0^{‖f‖/c} t^(p-a-1) dt` and `∫_{‖f‖/c}^∞ t^(p-b-1
 * E. M. Stein and G. Weiss, *Introduction to Fourier Analysis on Euclidean Spaces*, Chapter V,
   §2.
 -/
+
+@[expose] public section
+
 
 open MeasureTheory Set Filter Topology
 open scoped ENNReal NNReal
