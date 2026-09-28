@@ -17,7 +17,10 @@
 - (R4, raw entry R4) "Latest lean" means the latest release candidate: `v4.35.0-rc3` (Lean and Mathlib tag).
 - (R5–R7, raw entries R5–R7) One-off authorization to commit and push the current state, then
   continue; add `*.lock` to `.gitignore`. Commit `5587aa6` made (verified modules only); push not
-  possible: the repository has no remote configured. No standing commit authorization.
+  possible: the repository had no remote configured. No standing commit authorization.
+- (R8, raw entry R8) One-off: commit, push and continue. Commit `db31ce5` (through Lemma 6.1) pushed to
+  `origin` (`https://github.com/roos-j/lean-discretesw.git`, branch `main`, remote added by the user).
+- (R9, raw entry R9) One-off: commit, push and continue (through Proposition 12.3).
 
 Raw prompts are logged in `automation/raw.md` (Git-ignored).
 

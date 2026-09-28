@@ -133,54 +133,54 @@ complete | lem:continuousband (L5.3) | L² decay T^(-1/(4D)) | 2026-09-27T21:44:
 complete | lem:continuousband (L5.3) | interpolation and passage to the full supremum | 2026-09-27T21:44:41-04:00
 complete | lem:fourierbook (L6.1) | periodization coefficients; rapid decay for smooth m | 2026-09-27T22:09:50-04:00
 complete | lem:fourierbook (L6.1) | Fourier support of products; vanishing sums; orthogonality | 2026-09-27T22:09:50-04:00
-in progress | lem:sampling (L6.2) | Euclidean-to-lattice transfer of maximal multiplier bounds | 2026-09-27T22:09:50-04:00
-not started | lem:sampling (L6.2) | Δ_q m bound uniform in q | 2026-09-27T12:22:47-04:00
-not started | def:blocks (D7.1), eq. (7.1) | coprime block decomposition bijection; separation | 2026-09-27T12:22:47-04:00
-not started | lem:superorth (L7.2) | singleton superorthogonality, single index | 2026-09-27T12:22:47-04:00
-not started | lem:superorth (L7.2) | subset-indexed version via random colorings | 2026-09-27T12:22:47-04:00
-not started | lem:sunflower (L7.3) | sunflower lemma for l-element sets | 2026-09-27T12:22:47-04:00
-not started | lem:sunflower (L7.3), eq. (7.2) | weighted sunflower inequality | 2026-09-27T12:22:47-04:00
-not started | lem:blockorthog (L7.4) | subset vanishing condition for f_A | 2026-09-27T12:22:47-04:00
-not started | lem:blockorthog (L7.4) | disjoint Fourier supports of petal products | 2026-09-27T12:22:47-04:00
-not started | lem:normdescription (L7.5), eq. (7.3) | norm description | 2026-09-27T12:22:47-04:00
-not started | lem:companion (L7.6), eq. (7.4) | t = 2 case | 2026-09-27T12:22:47-04:00
-not started | lem:companion (L7.6), eq. (7.5) | t = ∞ case via inclusion–exclusion and weighted Cauchy–Schwarz | 2026-09-27T12:22:47-04:00
-not started | lem:companion (L7.6) | interpolation 2 ≤ t ≤ ∞ | 2026-09-27T12:22:47-04:00
-not started | thm:IW (T7.7) | smooth symbol, p = 2r | 2026-09-27T12:22:47-04:00
-not started | thm:IW (T7.7) | duality p = (2r)′ and interpolation | 2026-09-27T12:22:47-04:00
-not started | thm:IW (T7.7) | measurable symbol by frequency mollification | 2026-09-27T12:22:47-04:00
-not started | con:goodset (C7.8) | good set 𝒰_N contains all denominators ≤ N; ε threshold | 2026-09-27T12:22:47-04:00
-not started | lem:minorL2 (L8.1), eq. (8.1) | bad pairs give rational approximations | 2026-09-27T12:22:47-04:00
-not started | lem:minorL2 (L8.1) | counting bad pairs; contradiction with λ ∉ X_j | 2026-09-27T12:22:47-04:00
-not started | lem:minorL2 (L8.1) | local Hilbert–Schmidt bound and globalization | 2026-09-27T12:22:47-04:00
-not started | con:parameters (C8.2), eq. (8.2) | minor-arc ℓ^p bound C j^(-2); parameter choices | 2026-09-27T12:22:47-04:00
-not started | lem:liftkernel (L9.1), eq. (9.4) | exact lifted kernel identity | 2026-09-27T12:22:47-04:00
-not started | lem:arithmax (L9.2), eq. (9.7) | TT* kernel bound via periodic averaging | 2026-09-27T12:22:47-04:00
-not started | lem:arithmax (L9.2) | case D ≥ 4 exceptional set | 2026-09-27T12:22:47-04:00
-not started | lem:arithmax (L9.2) | case D = 2 exceptional set | 2026-09-27T12:22:47-04:00
-not started | lem:arithmax (L9.2), eq. (9.5) | Schur conclusion: ℓ² decay 2^(-γs) | 2026-09-27T12:22:47-04:00
-not started | lem:arithmax (L9.2), eq. (9.6) | vector-valued ℓ^t bound | 2026-09-27T12:22:47-04:00
-not started | lem:liftsquare (L9.3), eq. (9.8) | factorization 𝓛 = 𝒜 𝒟 | 2026-09-27T12:22:47-04:00
-not started | lem:liftsquare (L9.3), eq. (9.9) | ℓ² lifted square estimate | 2026-09-27T12:22:47-04:00
-not started | lem:liftsquare (L9.3), eq. (9.10) | ℓ^p lifted square estimate | 2026-09-27T12:22:47-04:00
-not started | lem:liftenvelope (L9.4) | positive envelope for lifted annular kernels | 2026-09-27T12:22:47-04:00
-not started | lem:lifttrunc (L10.1), eq. (10.2) | choice of J_s | 2026-09-27T12:22:47-04:00
-not started | lem:lifttrunc (L10.1) | short range J ≤ J_s via binary inequality | 2026-09-27T12:22:47-04:00
-not started | lem:lifttrunc (L10.1) | long range: decomposition m_(≥J) = τ_J m_K + Ê_J | 2026-09-27T12:22:47-04:00
-not started | lem:lifttrunc (L10.1), eqs. (10.3),(10.4) | shift identity and shift error | 2026-09-27T12:22:47-04:00
-not started | lem:lifttrunc (L10.1) | averaging argument over 𝒱_s | 2026-09-27T12:22:47-04:00
-not started | lem:lifttrunc (L10.1), eq. (10.1) | combination | 2026-09-27T12:22:47-04:00
-not started | lem:middleband (L11.1) | FTC square-function inequality | 2026-09-27T12:22:47-04:00
-not started | lem:middleband (L11.1) | ℓ² band bound and interpolation | 2026-09-27T12:22:47-04:00
-not started | lem:highband (L11.2) | high-band analytic gain | 2026-09-27T12:22:47-04:00
-not started | thm:liftedSW (T11.3) | band decomposition: high and middle bands | 2026-09-27T12:22:47-04:00
-not started | thm:liftedSW (T11.3) | low part: unmodulated truncation plus error | 2026-09-27T12:22:47-04:00
-not started | thm:liftedSW (T11.3), eq. (11.1) | combination | 2026-09-27T12:22:47-04:00
-not started | lem:kernelerror (L12.1), eq. (12.1) | quantitative smoothing error and kernel formula | 2026-09-27T12:22:47-04:00
-not started | lem:coherence (L12.2) | choice of j₀ and interval coherence | 2026-09-27T12:22:47-04:00
-not started | prop:finiteSW (P12.3) | minor part | 2026-09-27T12:22:47-04:00
-not started | prop:finiteSW (P12.3) | major smoothing errors | 2026-09-27T12:22:47-04:00
-not started | prop:finiteSW (P12.3), eq. (12.2) | main terms grouped by s; conclusion | 2026-09-27T12:22:47-04:00
-not started | lem:absolute (L13.1), eq. (13.1) | absolute convergence, continuity, periodicity, pointwise continuity bound | 2026-09-27T12:22:47-04:00
+complete | lem:sampling (L6.2) | Euclidean-to-lattice transfer of maximal multiplier bounds | 2026-09-27T22:39:52-04:00
+complete | lem:sampling (L6.2) | Δ_q m bound uniform in q | 2026-09-27T22:39:52-04:00
+complete | def:blocks (D7.1), eq. (7.1) | coprime block decomposition bijection; separation | 2026-09-27T23:02:39-04:00
+complete | lem:superorth (L7.2) | singleton superorthogonality, single index | 2026-09-27T23:36:51-04:00
+complete | lem:superorth (L7.2) | subset-indexed version via random colorings | 2026-09-27T23:36:51-04:00
+complete | lem:sunflower (L7.3) | sunflower lemma for l-element sets | 2026-09-27T23:52:44-04:00
+complete | lem:sunflower (L7.3), eq. (7.2) | weighted sunflower inequality | 2026-09-27T23:52:44-04:00
+complete | lem:blockorthog (L7.4) | subset vanishing condition for f_A | 2026-09-28T00:07:56-04:00
+complete | lem:blockorthog (L7.4) | disjoint Fourier supports of petal products | 2026-09-28T00:07:56-04:00
+complete | lem:normdescription (L7.5), eq. (7.3) | norm description | 2026-09-28T00:22:50-04:00
+complete | lem:companion (L7.6), eq. (7.4) | t = 2 case | 2026-09-28T01:06:25-04:00
+complete | lem:companion (L7.6), eq. (7.5) | t = ∞ case via inclusion–exclusion and weighted Cauchy–Schwarz | 2026-09-28T01:06:25-04:00
+complete | lem:companion (L7.6) | interpolation 2 ≤ t ≤ ∞ | 2026-09-28T01:06:25-04:00
+complete | thm:IW (T7.7) | smooth symbol, p = 2r | 2026-09-28T01:53:00-04:00
+complete | thm:IW (T7.7) | duality p = (2r)′ and interpolation | 2026-09-28T01:53:00-04:00
+complete | thm:IW (T7.7) | measurable symbol by frequency mollification | 2026-09-28T01:53:00-04:00
+complete | con:goodset (C7.8) | good set 𝒰_N contains all denominators ≤ N; ε threshold | 2026-09-28T02:00:57-04:00
+complete | lem:minorL2 (L8.1), eq. (8.1) | bad pairs give rational approximations | 2026-09-28T02:34:09-04:00
+complete | lem:minorL2 (L8.1) | counting bad pairs; contradiction with λ ∉ X_j | 2026-09-28T02:34:09-04:00
+complete | lem:minorL2 (L8.1) | local Hilbert–Schmidt bound and globalization | 2026-09-28T02:34:09-04:00
+complete | con:parameters (C8.2), eq. (8.2) | minor-arc ℓ^p bound C j^(-2); parameter choices | 2026-09-28T02:47:42-04:00
+complete | lem:liftkernel (L9.1), eq. (9.4) | exact lifted kernel identity | 2026-09-28T03:00:19-04:00
+complete | lem:arithmax (L9.2), eq. (9.7) | TT* kernel bound via periodic averaging | 2026-09-28T03:54:43-04:00
+complete | lem:arithmax (L9.2) | case D ≥ 4 exceptional set | 2026-09-28T03:54:43-04:00
+complete | lem:arithmax (L9.2) | case D = 2 exceptional set | 2026-09-28T03:54:43-04:00
+complete | lem:arithmax (L9.2), eq. (9.5) | Schur conclusion: ℓ² decay 2^(-γs) | 2026-09-28T03:54:43-04:00
+complete | lem:arithmax (L9.2), eq. (9.6) | vector-valued ℓ^t bound | 2026-09-28T03:54:43-04:00
+complete | lem:liftsquare (L9.3), eq. (9.8) | factorization 𝓛 = 𝒜 𝒟 | 2026-09-28T04:25:47-04:00
+complete | lem:liftsquare (L9.3), eq. (9.9) | ℓ² lifted square estimate | 2026-09-28T04:25:47-04:00
+complete | lem:liftsquare (L9.3), eq. (9.10) | ℓ^p lifted square estimate | 2026-09-28T04:25:47-04:00
+complete | lem:liftenvelope (L9.4) | positive envelope for lifted annular kernels | 2026-09-28T04:25:47-04:00
+complete | lem:lifttrunc (L10.1), eq. (10.2) | choice of J_s | 2026-09-28T05:02:02-04:00
+complete | lem:lifttrunc (L10.1) | short range J ≤ J_s via binary inequality | 2026-09-28T05:02:02-04:00
+complete | lem:lifttrunc (L10.1) | long range: decomposition m_(≥J) = τ_J m_K + Ê_J | 2026-09-28T05:02:02-04:00
+complete | lem:lifttrunc (L10.1), eqs. (10.3),(10.4) | shift identity and shift error | 2026-09-28T05:31:23-04:00
+complete | lem:lifttrunc (L10.1) | averaging argument over 𝒱_s | 2026-09-28T05:31:23-04:00
+complete | lem:lifttrunc (L10.1), eq. (10.1) | combination | 2026-09-28T05:31:23-04:00
+complete | lem:middleband (L11.1) | FTC square-function inequality | 2026-09-28T06:04:38-04:00
+complete | lem:middleband (L11.1) | ℓ² band bound and interpolation | 2026-09-28T06:04:38-04:00
+complete | lem:highband (L11.2) | high-band analytic gain | 2026-09-28T06:04:38-04:00
+complete | thm:liftedSW (T11.3) | band decomposition: high and middle bands | 2026-09-28T06:31:32-04:00
+complete | thm:liftedSW (T11.3) | low part: unmodulated truncation plus error | 2026-09-28T06:31:32-04:00
+complete | thm:liftedSW (T11.3), eq. (11.1) | combination | 2026-09-28T06:31:32-04:00
+complete | lem:kernelerror (L12.1), eq. (12.1) | quantitative smoothing error and kernel formula | 2026-09-28T06:57:08-04:00
+complete | lem:coherence (L12.2) | choice of j₀ and interval coherence | 2026-09-28T06:57:08-04:00
+complete | prop:finiteSW (P12.3) | minor part | 2026-09-28T07:10:08-04:00
+complete | prop:finiteSW (P12.3) | major smoothing errors | 2026-09-28T07:10:08-04:00
+complete | prop:finiteSW (P12.3), eq. (12.2) | main terms grouped by s; conclusion | 2026-09-28T07:10:08-04:00
+in progress | lem:absolute (L13.1), eq. (13.1) | absolute convergence, continuity, periodicity, pointwise continuity bound | 2026-09-28T07:10:08-04:00
 not started | thm:main (T13.2) | finite-support inputs | 2026-09-27T12:22:47-04:00
 not started | thm:main (T13.2), eq. (13.2) | all ℓ^p inputs; final theorem | 2026-09-27T12:22:47-04:00

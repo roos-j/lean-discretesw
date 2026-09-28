@@ -47,6 +47,22 @@ together with the lattice/torus Fourier conventions of §1.2 used by all later s
   `latFT_prod_eq_zero_of_not_mem` (Fourier support of a product is in `S_1 + ⋯ + S_l + ℤⁿ`),
   `latFT_conj_eq_zero_of_not_mem` (conjugation reflects supports), `tsum_prod_eq_zero`,
   `tsum_mul_conj_eq_zero`, `tsum_prod_mul_conj_prod_eq_zero` (orthogonality).
+
+## Blueprint Lemma 6.2 (`lem:sampling`)
+
+* `sampling_maximal`: Euclidean maximal `L^p` bounds for finitely many bounded symbols supported
+  in `[-1/8,1/8]ⁿ` transfer to their periodizations on `ℓ^p(ℤⁿ)`, with a constant depending only
+  on `n` (`sampling_single`: the one-symbol case);
+* `sampling_gridSym`: `Δ_q m = ∑_{β ∈ (q⁻¹ℤ/ℤ)ⁿ} m_per(· - β)` (`gridSym`) for `m` supported in
+  `[-1/(8q),1/(8q)]ⁿ` has `ℓ^p` multiplier norm `≤ C_n` times the Euclidean one, uniformly in `q`.
+
+The proof follows the blueprint: `v = 𝓕⁻ φ` (`samplingV`, `φ = 1` on `[-1/8,1/8]ⁿ`),
+`F = ∑_z f(z) v(· - z)` (`samplingF`, with `‖F‖_p ≲ ‖f‖_p`: `lintegral_enorm_samplingF_rpow_le`),
+`m(D) F (z) = m_per(D) f (z)` (`fourierInv_mul_fourier_samplingF`), the reproducing formula
+`H = v * H` (`fourierInv_eq_integral_samplingV_mul`), the sampling bound
+(`tsum_rpow_le_of_le_lintegral`); for `Δ_q`: the kernel `qⁿ 𝟙_{q ∣ y} 𝓕⁻ m (y)`
+(`latKernel_gridSym`), residue classes (`latMult_gridSym_residue`) and dilation invariance
+(`multiplier_bound_comp_inv_smul`).
 -/
 
 namespace Auto
@@ -812,5 +828,904 @@ theorem tsum_prod_mul_conj_prod_eq_zero {ι κ : Type*} {s : Finset ι} {t : Fin
   obtain ⟨hV1, hV2⟩ := latFT_prod_eq_zero_of_not_mem ht hv hT
   refine tsum_mul_conj_eq_zero hU1 hV1 hU2 hV2 ?_
   rwa [add_assoc, range_latEmbed_add_self]
+
+
+/-! ### Blueprint Lemma 6.2 (`lem:sampling`): the auxiliary functions `φ` and `v` -/
+
+
+/-- A smooth bump on `E` equal to `1` on the ball of radius `n + 1 ⊇ [-1/8,1/8]ⁿ`. -/
+noncomputable def samplingBump (n : ℕ) : ContDiffBump (0 : EuclideanSpace ℝ (Fin n)) :=
+  ⟨n + 1, n + 2, by positivity, by linarith⟩
+
+/-- The complexified bump function has compact support. -/
+lemma hasCompactSupport_samplingBump :
+    HasCompactSupport (fun ξ : EuclideanSpace ℝ (Fin n) => ((samplingBump n ξ : ℝ) : ℂ)) :=
+  (samplingBump n).hasCompactSupport.comp_left Complex.ofReal_zero
+
+/-- The complexified bump function is smooth. -/
+lemma contDiff_samplingBump :
+    ContDiff ℝ ∞ (fun ξ : EuclideanSpace ℝ (Fin n) => ((samplingBump n ξ : ℝ) : ℂ)) :=
+  Complex.ofRealCLM.contDiff.comp (samplingBump n).contDiff
+
+/-- The Schwartz function `φ` (complexified `samplingBump`), equal to `1` on `[-1/8,1/8]ⁿ`. -/
+noncomputable def samplingPhi (n : ℕ) : 𝓢(EuclideanSpace ℝ (Fin n), ℂ) :=
+  hasCompactSupport_samplingBump.toSchwartzMap contDiff_samplingBump
+
+/-- The Schwartz function `v = 𝓕⁻ φ` of the proof of Blueprint Lemma 6.2, with `𝓕 v = φ`. -/
+noncomputable def samplingV (n : ℕ) : 𝓢(EuclideanSpace ℝ (Fin n), ℂ) := 𝓕⁻ (samplingPhi n)
+
+/-- `𝓕 v = φ`. -/
+lemma fourier_samplingV : 𝓕 (samplingV n : EuclideanSpace ℝ (Fin n) → ℂ) = samplingPhi n := by
+  rw [← SchwartzMap.fourier_coe, samplingV, FourierTransform.fourier_fourierInv_eq]
+
+/-- A point with all coordinates in `[-c,c]` has norm at most `n c`. -/
+lemma norm_le_of_forall_abs_le {ξ : EuclideanSpace ℝ (Fin n)} {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ i, |ξ i| ≤ c) : ‖ξ‖ ≤ n * c := by
+  rw [EuclideanSpace.norm_eq]
+  have h1 : ∑ i, ‖ξ i‖ ^ 2 ≤ (n * c) ^ 2 := by
+    calc ∑ i, ‖ξ i‖ ^ 2 ≤ ∑ _i : Fin n, c ^ 2 := Finset.sum_le_sum fun i _ => by
+          rw [Real.norm_eq_abs]; exact pow_le_pow_left₀ (abs_nonneg _) (h i) 2
+      _ = n * c ^ 2 := by simp
+      _ ≤ (n * c) ^ 2 := by
+          rw [mul_pow]
+          have : (n : ℝ) ≤ (n : ℝ) ^ 2 := by
+            rcases Nat.eq_zero_or_pos n with h0 | h0
+            · simp [h0]
+            · have : (1 : ℝ) ≤ n := by exact_mod_cast h0
+              nlinarith
+          exact mul_le_mul_of_nonneg_right this (sq_nonneg c)
+  calc √(∑ i, ‖ξ i‖ ^ 2) ≤ √((n * c) ^ 2) := Real.sqrt_le_sqrt h1
+    _ = n * c := Real.sqrt_sq (by positivity)
+
+/-- `φ` is the complexified bump function. -/
+lemma samplingPhi_apply (ξ : EuclideanSpace ℝ (Fin n)) :
+    samplingPhi n ξ = ((samplingBump n ξ : ℝ) : ℂ) := rfl
+
+/-- `φ = 1` on the cube `[-1/8,1/8]ⁿ`. -/
+lemma samplingPhi_eq_one {ξ : EuclideanSpace ℝ (Fin n)} (h : ∀ i, |ξ i| ≤ 1 / 8) :
+    samplingPhi n ξ = 1 := by
+  rw [samplingPhi_apply, (samplingBump n).one_of_mem_closedBall, Complex.ofReal_one]
+  rw [Metric.mem_closedBall, dist_zero_right]
+  refine (norm_le_of_forall_abs_le (by norm_num) h).trans ?_
+  change (n : ℝ) * (1 / 8) ≤ n + 1
+  have : (0 : ℝ) ≤ n := n.cast_nonneg
+  linarith
+
+/-- The inverse Fourier transform of an integrable function is continuous. -/
+lemma continuous_fourierInv_of_integrable {G : EuclideanSpace ℝ (Fin n) → ℂ} (hG : Integrable G) :
+    Continuous (𝓕⁻ G) :=
+  VectorFourier.fourierIntegral_continuous Real.continuous_fourierChar
+    (by
+      change Continuous fun p : _ × _ => -(inner ℝ p.1 p.2)
+      exact (continuous_fst.inner continuous_snd).neg) hG
+
+/-- The inverse Fourier transform in terms of `eC`: `𝓕⁻ G (y) = ∫ e(ξ · y) G(ξ) dξ`. -/
+lemma fourierInv_eq_integral_eC (G : EuclideanSpace ℝ (Fin n) → ℂ) (y : EuclideanSpace ℝ (Fin n)) :
+    𝓕⁻ G y = ∫ ξ, eC (inner ℝ ξ y) * G ξ := by
+  rw [Real.fourierInv_eq]
+  congr 1; funext ξ
+  rw [Circle.smul_def, fourierChar_eq_eC, smul_eq_mul]
+
+/-- The Fourier transform in terms of `eC`: `𝓕 G (ξ) = ∫ e(-x · ξ) G(x) dx`. -/
+lemma fourier_eq_integral_eC (G : EuclideanSpace ℝ (Fin n) → ℂ) (ξ : EuclideanSpace ℝ (Fin n)) :
+    𝓕 G ξ = ∫ x, eC (-inner ℝ x ξ) * G x := by
+  rw [Real.fourier_eq]
+  congr 1; funext x
+  rw [Circle.smul_def, fourierChar_eq_eC, smul_eq_mul]
+
+
+/-- The integer point `⌊x⌋` has distance at most `n` from `x`. -/
+lemma norm_sub_latEmbed_floor_le (x : EuclideanSpace ℝ (Fin n)) :
+    ‖x - latEmbed (fun i => ⌊x i⌋)‖ ≤ n := by
+  have := norm_le_of_forall_abs_le (ξ := x - latEmbed (fun i => ⌊x i⌋)) zero_le_one fun i => by
+    simp only [PiLp.sub_apply, latEmbed_apply]
+    rw [abs_le]
+    constructor <;> linarith [Int.floor_le (x i), Int.lt_floor_add_one (x i)]
+  simpa using this
+
+/-- Uniform bound for lattice sums of translated envelopes:
+`∑_{z ∈ ℤⁿ} B_1(x - z) ≤ (n+1)^{n+1} C_n` for every `x ∈ E`. -/
+lemma tsum_envelope_sub_latEmbed_le (x : EuclideanSpace ℝ (Fin n)) :
+    ∑' z : Fin n → ℤ, ENNReal.ofReal (envelope n 1 (x - latEmbed z)) ≤
+      ENNReal.ofReal (((n : ℝ) + 1) ^ (n + 1) * envelopeConst n) := by
+  set k : Fin n → ℤ := fun i => ⌊x i⌋
+  have hk := norm_sub_latEmbed_floor_le x
+  have hpt : ∀ z : Fin n → ℤ, envelope n 1 (x - latEmbed z) ≤
+      ((n : ℝ) + 1) ^ (n + 1) * latEnvelope n 1 (z - k) := by
+    intro z
+    refine envelope_le_pow_mul one_pos ?_
+    have h1 : latEmbed (z - k) = (latEmbed z - x) + (x - latEmbed k) := by
+      rw [latEmbed_sub]; abel
+    have h2 : ‖latEmbed (z - k)‖ ≤ ‖x - latEmbed z‖ + n := by
+      rw [h1]
+      refine (norm_add_le _ _).trans ?_
+      rw [norm_sub_rev]; linarith
+    have h3 : (0 : ℝ) ≤ ‖x - latEmbed z‖ := norm_nonneg _
+    have h4 : (0 : ℝ) ≤ n := n.cast_nonneg
+    nlinarith
+  obtain ⟨hs, hle⟩ := summable_latEnvelope_and_tsum_le (n := n) le_rfl
+  have hs' : Summable fun z : Fin n → ℤ => ((n : ℝ) + 1) ^ (n + 1) * latEnvelope n 1 (z - k) :=
+    ((Equiv.subRight k).summable_iff.2 hs).mul_left _
+  calc ∑' z : Fin n → ℤ, ENNReal.ofReal (envelope n 1 (x - latEmbed z))
+      ≤ ∑' z : Fin n → ℤ, ENNReal.ofReal (((n : ℝ) + 1) ^ (n + 1) * latEnvelope n 1 (z - k)) :=
+        ENNReal.tsum_le_tsum fun z => ENNReal.ofReal_le_ofReal (hpt z)
+    _ = ENNReal.ofReal (∑' z : Fin n → ℤ, ((n : ℝ) + 1) ^ (n + 1) * latEnvelope n 1 (z - k)) :=
+        (ENNReal.ofReal_tsum_of_nonneg (fun z => mul_nonneg (by positivity)
+          (envelope_nonneg one_pos _)) hs').symm
+    _ ≤ _ := by
+        refine ENNReal.ofReal_le_ofReal ?_
+        rw [tsum_mul_left]
+        refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+        have := (Equiv.subRight k).tsum_eq (latEnvelope n 1)
+        simp only [Equiv.subRight_apply] at this
+        rw [this]; exact hle
+
+/-- Schwartz functions are dominated by a multiple of the envelope `B_1`. -/
+lemma exists_norm_le_envelope (v : 𝓢(EuclideanSpace ℝ (Fin n), ℂ)) :
+    ∃ K : ℝ, 0 ≤ K ∧ ∀ x, ‖v x‖ ≤ K * envelope n 1 x := by
+  obtain ⟨K, hK, h⟩ := exists_schwartz_decay v (n + 1)
+  refine ⟨K, hK, fun x => ?_⟩
+  have h1 := (h x).1
+  have hpos : 0 < (1 + ‖x‖) ^ (n + 1) := by positivity
+  rw [envelope, one_pow, inv_one, one_mul, div_one, ← div_eq_mul_inv, le_div_iff₀ hpos, mul_comm]
+  exact h1
+
+/-- For a Schwartz function `v`, the lattice sums `∑_z |v(x - z)|` and `∑_z |v(z - x)|` are
+bounded uniformly in `x ∈ E`. -/
+lemma exists_tsum_enorm_sub_latEmbed_le (v : 𝓢(EuclideanSpace ℝ (Fin n), ℂ)) :
+    ∃ S : ENNReal, S ≠ ⊤ ∧ ∀ x : EuclideanSpace ℝ (Fin n),
+      (∑' z : Fin n → ℤ, ‖v (x - latEmbed z)‖ₑ ≤ S) ∧
+        ∑' z : Fin n → ℤ, ‖v (latEmbed z - x)‖ₑ ≤ S := by
+  obtain ⟨K, hK, h⟩ := exists_norm_le_envelope v
+  refine ⟨ENNReal.ofReal K * ENNReal.ofReal (((n : ℝ) + 1) ^ (n + 1) * envelopeConst n),
+    ENNReal.mul_ne_top ENNReal.ofReal_ne_top ENNReal.ofReal_ne_top, fun x => ⟨?_, ?_⟩⟩
+  · calc ∑' z : Fin n → ℤ, ‖v (x - latEmbed z)‖ₑ
+        ≤ ∑' z : Fin n → ℤ, ENNReal.ofReal K * ENNReal.ofReal (envelope n 1 (x - latEmbed z)) := by
+          refine ENNReal.tsum_le_tsum fun z => ?_
+          rw [← ENNReal.ofReal_mul hK, ← ofReal_norm]
+          exact ENNReal.ofReal_le_ofReal (h _)
+      _ ≤ _ := by
+          rw [ENNReal.tsum_mul_left]
+          exact mul_le_mul_right (tsum_envelope_sub_latEmbed_le x) _
+  · calc ∑' z : Fin n → ℤ, ‖v (latEmbed z - x)‖ₑ
+        ≤ ∑' z : Fin n → ℤ, ENNReal.ofReal K * ENNReal.ofReal (envelope n 1 (x - latEmbed z)) := by
+          refine ENNReal.tsum_le_tsum fun z => ?_
+          rw [← ENNReal.ofReal_mul hK, ← ofReal_norm]
+          refine ENNReal.ofReal_le_ofReal ((h _).trans (le_of_eq ?_))
+          rw [envelope, envelope, norm_sub_rev]
+      _ ≤ _ := by
+          rw [ENNReal.tsum_mul_left]
+          exact mul_le_mul_right (tsum_envelope_sub_latEmbed_le x) _
+
+
+/-- The Schwartz function `F = ∑_{z ∈ T} f(z) v(· - z)` built from lattice data. -/
+noncomputable def samplingF (T : Finset (Fin n → ℤ)) (f : (Fin n → ℤ) → ℂ) :
+    𝓢(EuclideanSpace ℝ (Fin n), ℂ) :=
+  ∑ z ∈ T, f z • SchwartzMap.compSubConstCLM ℂ (latEmbed z) (samplingV n)
+
+/-- Pointwise formula `F(x) = ∑_{z ∈ T} f(z) v(x - z)`. -/
+lemma samplingF_apply (T : Finset (Fin n → ℤ)) (f : (Fin n → ℤ) → ℂ)
+    (x : EuclideanSpace ℝ (Fin n)) :
+    samplingF T f x = ∑ z ∈ T, f z * samplingV n (x - latEmbed z) := by
+  simp [samplingF]
+
+/-- For finitely supported `f`, `f̂` is a finite trigonometric sum. -/
+lemma latFT_eq_sum {T : Finset (Fin n → ℤ)} {f : (Fin n → ℤ) → ℂ} (hT : ∀ z ∉ T, f z = 0)
+    (ξ : EuclideanSpace ℝ (Fin n)) :
+    latFT f ξ = ∑ z ∈ T, f z * eC (-(inner ℝ (latEmbed z) ξ)) := by
+  rw [latFT, tsum_eq_sum]
+  intro z hz; rw [hT z hz, zero_mul]
+
+/-- `𝓕 F = f̂ · φ` for `F = ∑_z f(z) v(· - z)`, with `f̂ = latFT f` and `φ = 𝓕 v`. -/
+lemma fourier_samplingF {T : Finset (Fin n → ℤ)} {f : (Fin n → ℤ) → ℂ} (hT : ∀ z ∉ T, f z = 0)
+    (ξ : EuclideanSpace ℝ (Fin n)) :
+    𝓕 (samplingF T f : EuclideanSpace ℝ (Fin n) → ℂ) ξ = latFT f ξ * samplingPhi n ξ := by
+  rw [fourier_eq_integral_eC, latFT_eq_sum hT, Finset.sum_mul, ← fourier_samplingV,
+    fourier_eq_integral_eC]
+  simp_rw [samplingF_apply, Finset.mul_sum]
+  rw [integral_finsetSum]
+  · refine Finset.sum_congr rfl fun z _ => ?_
+    set a := latEmbed z
+    have h := integral_sub_right_eq_self (μ := volume)
+      (fun y => eC (-inner ℝ (y + a) ξ) * (f z * samplingV n y)) a
+    simp only [sub_add_cancel] at h
+    rw [h, ← integral_const_mul]
+    congr 1; funext y
+    rw [inner_add_left, neg_add, eC_add]; ring
+  · intro z _
+    refine ((samplingV n).integrable.comp_sub_right (latEmbed z)).const_mul (f z) |>.bdd_mul
+      (c := 1) (by fun_prop) (Filter.Eventually.of_forall fun x => le_of_eq (norm_eC _))
+
+/-- A bounded a.e. strongly measurable function supported in a bounded cube is integrable. -/
+lemma integrable_of_bound_of_support_subset {m : EuclideanSpace ℝ (Fin n) → ℂ}
+    (hm : AEStronglyMeasurable m volume) {B c : ℝ} (hB : ∀ ξ, ‖m ξ‖ ≤ B) (hc : 0 ≤ c)
+    (hsupp : Function.support m ⊆ {ξ | ∀ i, |ξ i| ≤ c}) : Integrable m := by
+  have hsub : Function.support m ⊆ Metric.closedBall 0 (n * c) := fun ξ hξ => by
+    rw [Metric.mem_closedBall, dist_zero_right]
+    exact norm_le_of_forall_abs_le hc (hsupp hξ)
+  refine (integrableOn_iff_integrable_of_support_subset hsub).1 ?_
+  exact Measure.integrableOn_of_bounded (measure_closedBall_lt_top).ne hm
+    (Filter.Eventually.of_forall hB)
+
+/-- Tiling identity: for integrable `m` and a bounded measurable `ι(G)`-periodic `h`,
+`∫_E m h = ∫_{[0,1)ⁿ} m_per h`. -/
+theorem integral_mul_eq_setIntegral_periodize_mul {m : EuclideanSpace ℝ (Fin n) → ℂ}
+    (hm : Integrable m) {h : EuclideanSpace ℝ (Fin n) → ℂ}
+    (hper : ∀ ξ (k : Fin n → ℤ), h (ξ + latEmbed k) = h ξ)
+    (hmeas : AEStronglyMeasurable h volume) {C : ℝ} (hC : ∀ ξ, ‖h ξ‖ ≤ C) :
+    ∫ ξ, m ξ * h ξ = ∫ ξ in torusCube n, periodize m ξ * h ξ := by
+  set H : EuclideanSpace ℝ (Fin n) → ℂ := fun η => m η * h η
+  have hH : Integrable H := hm.mul_bdd (c := C) hmeas (Filter.Eventually.of_forall hC)
+  have hterm : ∀ k : Fin n → ℤ, ∀ ξ, m (ξ - latEmbed k) * h ξ = H (ξ - latEmbed k) := by
+    intro k ξ
+    simp only [H]
+    rw [sub_eq_add_neg, ← latEmbed_neg, hper]
+  have hint : ∀ k : Fin n → ℤ, Integrable (fun ξ => H (ξ - latEmbed k))
+      (volume.restrict (torusCube n)) := fun k => (hH.comp_sub_right (latEmbed k)).integrableOn
+  have hsum : Summable fun k : Fin n → ℤ => ∫ ξ in torusCube n, ‖H (ξ - latEmbed k)‖ :=
+    (hasSum_setIntegral_torusCube_sub hH.norm).summable
+  rw [← (hasSum_setIntegral_torusCube_sub hH).tsum_eq,
+    integral_tsum_of_summable_integral_norm hint hsum]
+  congr 1; funext ξ
+  rw [periodize, ← tsum_mul_right]
+  simp_rw [hterm]
+
+
+/-- A function vanishing off a finite set is absolutely summable. -/
+lemma summable_norm_of_finset {T : Finset (Fin n → ℤ)} {f : (Fin n → ℤ) → ℂ}
+    (hT : ∀ z ∉ T, f z = 0) : Summable fun z => ‖f z‖ :=
+  summable_of_ne_finset_zero (s := T) fun z hz => by rw [hT z hz, norm_zero]
+
+/-- The sampled values of `m(D) F` at integer points are the values of the lattice multiplier
+`m_per(D) f`: `𝓕⁻(m 𝓕F)(z) = m_per(D) f(z)` for `F = samplingF T f`, when `m` is bounded,
+measurable, and supported in `[-1/8,1/8]ⁿ`. -/
+theorem fourierInv_mul_fourier_samplingF {T : Finset (Fin n → ℤ)} {f : (Fin n → ℤ) → ℂ}
+    (hT : ∀ z ∉ T, f z = 0) {m : EuclideanSpace ℝ (Fin n) → ℂ}
+    (hm : AEStronglyMeasurable m volume) {B : ℝ} (hB : ∀ ξ, ‖m ξ‖ ≤ B)
+    (hsupp : Function.support m ⊆ {ξ | ∀ i, |ξ i| ≤ 1 / 8}) (y : Fin n → ℤ) :
+    𝓕⁻ (fun ξ => m ξ * 𝓕 (samplingF T f : EuclideanSpace ℝ (Fin n) → ℂ) ξ) (latEmbed y) =
+      latMult (periodize m) f y := by
+  have hf := summable_norm_of_finset hT
+  have hmi : Integrable m := integrable_of_bound_of_support_subset hm hB (by norm_num) hsupp
+  rw [fourierInv_eq_integral_eC]
+  have h1 : ∀ ξ, eC (inner ℝ ξ (latEmbed y)) *
+      (m ξ * 𝓕 (samplingF T f : EuclideanSpace ℝ (Fin n) → ℂ) ξ) =
+      m ξ * (latFT f ξ * eC (inner ℝ (latEmbed y) ξ)) := by
+    intro ξ
+    rw [fourier_samplingF hT]
+    by_cases h0 : m ξ = 0
+    · simp [h0]
+    · rw [samplingPhi_eq_one (hsupp h0), real_inner_comm]; ring
+  simp_rw [h1]
+  rw [integral_mul_eq_setIntegral_periodize_mul hmi (C := ∑' z, ‖f z‖)
+    (h := fun ξ => latFT f ξ * eC (inner ℝ (latEmbed y) ξ))
+    (fun ξ k => by rw [latFT_add_latEmbed, eC_inner_add_latEmbed])
+    ((continuous_latFT hf).mul (by fun_prop)).aestronglyMeasurable
+    (fun ξ => by rw [norm_mul, norm_eC, mul_one]; exact norm_latFT_le hf ξ)]
+  rw [latMult]
+  congr 1; funext ξ; ring
+
+/-- Reproducing formula: if `G` is integrable and `φ = 𝓕 v = 1` wherever `G ≠ 0`, then
+`H = 𝓕⁻ G` satisfies `H = v * H` pointwise: `H(y) = ∫ v(x) H(y - x) dx`. -/
+theorem fourierInv_eq_integral_samplingV_mul {G : EuclideanSpace ℝ (Fin n) → ℂ}
+    (hG : Integrable G) (hsupp : ∀ ξ, G ξ ≠ 0 → samplingPhi n ξ = 1)
+    (y : EuclideanSpace ℝ (Fin n)) :
+    𝓕⁻ G y = ∫ x, samplingV n x * 𝓕⁻ G (y - x) := by
+  set v := samplingV n
+  have hφ : ∀ ξ, G ξ = (∫ x, eC (-inner ℝ x ξ) * v x) * G ξ := by
+    intro ξ
+    rw [← fourier_eq_integral_eC, fourier_samplingV]
+    by_cases h0 : G ξ = 0
+    · simp [h0]
+    · rw [hsupp ξ h0, one_mul]
+  set Φ : EuclideanSpace ℝ (Fin n) × EuclideanSpace ℝ (Fin n) → ℂ :=
+    fun p => eC (inner ℝ p.1 y) * eC (-inner ℝ p.2 p.1) * (G p.1 * v p.2)
+  have hΦ : Integrable Φ (volume.prod volume) := by
+    refine (hG.mul_prod v.integrable).bdd_mul (c := 1) ?_ ?_
+    · exact (Continuous.mul (by fun_prop) (by fun_prop)).aestronglyMeasurable
+    · exact Filter.Eventually.of_forall fun p => by rw [norm_mul, norm_eC, norm_eC, mul_one]
+  have hL : 𝓕⁻ G y = ∫ ξ, ∫ x, Φ (ξ, x) := by
+    rw [fourierInv_eq_integral_eC]
+    congr 1; funext ξ
+    conv_lhs => rw [hφ ξ]
+    rw [← integral_mul_const, ← integral_const_mul]
+    congr 1; funext x
+    simp only [Φ]; ring
+  rw [hL, integral_integral_swap hΦ]
+  congr 1; funext x
+  rw [fourierInv_eq_integral_eC, ← integral_const_mul]
+  congr 1; funext ξ
+  simp only [Φ]
+  rw [inner_sub_right, sub_eq_add_neg, eC_add, real_inner_comm x ξ]; ring
+
+
+open scoped ENNReal in
+/-- The sampling estimate: if `N(z) ≤ ∫ |v(z - x)| M(x) dx` at every lattice point, then
+`∑_z N(z)^p ≤ ‖v‖₁^{p-1} S ∫ M^p`, where `S` bounds `∑_z |v(z - x)|` uniformly. -/
+theorem tsum_rpow_le_of_le_lintegral (v : 𝓢(EuclideanSpace ℝ (Fin n), ℂ)) {S V : ℝ≥0∞}
+    (hS : ∀ x, ∑' z : Fin n → ℤ, ‖v (latEmbed z - x)‖ₑ ≤ S) (hV : ∫⁻ x, ‖v x‖ₑ ≤ V)
+    {p : ℝ} (hp : 1 ≤ p) {M : EuclideanSpace ℝ (Fin n) → ℝ≥0∞} (hM : AEMeasurable M)
+    {N : (Fin n → ℤ) → ℝ≥0∞} (hN : ∀ z, N z ≤ ∫⁻ x, ‖v (latEmbed z - x)‖ₑ * M x) :
+    ∑' z, N z ^ p ≤ V ^ (p - 1) * S * ∫⁻ x, M x ^ p := by
+  have hK : ∀ z : Fin n → ℤ, AEMeasurable (fun x => ‖v (latEmbed z - x)‖ₑ) :=
+    fun z => (v.continuous.comp (continuous_const.sub continuous_id)).enorm.aemeasurable
+  have hKint : ∀ z : Fin n → ℤ, ∫⁻ x, ‖v (latEmbed z - x)‖ₑ = ∫⁻ x, ‖v x‖ₑ :=
+    fun z => lintegral_sub_left_eq_self (fun x => ‖v x‖ₑ) (latEmbed z)
+  calc ∑' z, N z ^ p ≤ ∑' z, (∫⁻ x, ‖v (latEmbed z - x)‖ₑ * M x) ^ p :=
+        ENNReal.tsum_le_tsum fun z => ENNReal.rpow_le_rpow (hN z) (by linarith)
+    _ ≤ ∑' z, (∫⁻ x, ‖v (latEmbed z - x)‖ₑ) ^ (p - 1) *
+          ∫⁻ x, ‖v (latEmbed z - x)‖ₑ * M x ^ p :=
+        ENNReal.tsum_le_tsum fun z => lintegral_mul_rpow_le_young volume hp (hK z) hM
+    _ ≤ ∑' z, V ^ (p - 1) * ∫⁻ x, ‖v (latEmbed z - x)‖ₑ * M x ^ p := by
+        refine ENNReal.tsum_le_tsum fun z => ?_
+        rw [hKint]
+        gcongr
+    _ = V ^ (p - 1) * ∫⁻ x, (∑' z, ‖v (latEmbed z - x)‖ₑ) * M x ^ p := by
+        rw [ENNReal.tsum_mul_left,
+          ← lintegral_tsum (f := fun z x => ‖v (latEmbed z - x)‖ₑ * M x ^ p) fun z => (hK z).mul (hM.pow_const p)]
+        simp_rw [ENNReal.tsum_mul_right]
+    _ ≤ V ^ (p - 1) * ∫⁻ x, S * M x ^ p := by
+        gcongr with x
+        exact hS x
+    _ = V ^ (p - 1) * S * ∫⁻ x, M x ^ p := by
+        rw [lintegral_const_mul'' _ (hM.pow_const p), mul_assoc]
+
+open scoped ENNReal in
+/-- The synthesis estimate: `∫ |F|^p ≤ S^{p-1} ‖v‖₁ ∑_z |f(z)|^p` for
+`F = samplingF T f = ∑_z f(z) v(· - z)`, where `S` bounds `∑_z |v(x - z)|` uniformly. -/
+theorem lintegral_enorm_samplingF_rpow_le {S V : ℝ≥0∞}
+    (hS : ∀ x, ∑' z : Fin n → ℤ, ‖samplingV n (x - latEmbed z)‖ₑ ≤ S)
+    (hV : ∫⁻ x, ‖samplingV n x‖ₑ ≤ V) {p : ℝ} (hp : 1 ≤ p) (T : Finset (Fin n → ℤ))
+    (f : (Fin n → ℤ) → ℂ) :
+    ∫⁻ x, ‖samplingF T f x‖ₑ ^ p ≤ S ^ (p - 1) * V * ∑' z, ‖f z‖ₑ ^ p := by
+  set v := samplingV n
+  have hK : ∀ z : Fin n → ℤ, AEMeasurable (fun x => ‖v (x - latEmbed z)‖ₑ) :=
+    fun z => (v.continuous.comp (continuous_id.sub continuous_const)).enorm.aemeasurable
+  have hpt : ∀ x, ‖samplingF T f x‖ₑ ≤ ∑' z, ‖v (x - latEmbed z)‖ₑ * ‖f z‖ₑ := by
+    intro x
+    rw [samplingF_apply]
+    refine (enorm_sum_le _ _).trans ?_
+    refine le_trans (le_of_eq ?_) (ENNReal.sum_le_tsum T)
+    refine Finset.sum_congr rfl fun z _ => ?_
+    rw [enorm_mul, mul_comm]
+  have hpt2 : ∀ x, ‖samplingF T f x‖ₑ ^ p ≤
+      S ^ (p - 1) * ∑' z, ‖v (x - latEmbed z)‖ₑ * ‖f z‖ₑ ^ p := by
+    intro x
+    have h := lintegral_mul_rpow_le_young (Measure.count : Measure (Fin n → ℤ)) hp
+      (K := fun z => ‖v (x - latEmbed z)‖ₑ) (v := fun z => ‖f z‖ₑ)
+      AEMeasurable.of_discrete AEMeasurable.of_discrete
+    simp only [lintegral_count] at h
+    calc ‖samplingF T f x‖ₑ ^ p ≤ (∑' z, ‖v (x - latEmbed z)‖ₑ * ‖f z‖ₑ) ^ p :=
+          ENNReal.rpow_le_rpow (hpt x) (by linarith)
+      _ ≤ _ := h
+      _ ≤ _ := mul_le_mul_left (ENNReal.rpow_le_rpow (hS x) (by linarith)) _
+  calc ∫⁻ x, ‖samplingF T f x‖ₑ ^ p
+      ≤ ∫⁻ x, S ^ (p - 1) * ∑' z, ‖v (x - latEmbed z)‖ₑ * ‖f z‖ₑ ^ p := lintegral_mono hpt2
+    _ = S ^ (p - 1) * ∑' z, (∫⁻ x, ‖v (x - latEmbed z)‖ₑ) * ‖f z‖ₑ ^ p := by
+        rw [lintegral_const_mul'' _ (AEMeasurable.tsum fun z => (hK z).mul_const _),
+          lintegral_tsum fun z => (hK z).mul_const _]
+        congr 1
+        refine tsum_congr fun z => ?_
+        rw [lintegral_mul_const'' _ (hK z)]
+    _ ≤ S ^ (p - 1) * ∑' z, V * ‖f z‖ₑ ^ p := by
+        gcongr with z
+        rw [lintegral_sub_right_eq_self (fun x => ‖v x‖ₑ) (latEmbed z)]
+        exact hV
+    _ = S ^ (p - 1) * V * ∑' z, ‖f z‖ₑ ^ p := by
+        rw [ENNReal.tsum_mul_left, mul_assoc]
+
+
+open scoped ENNReal in
+/-- Blueprint Lemma 6.2 (`lem:sampling`), first assertion (sampling for a maximal family):
+there is a constant `C` (depending only on `n`; in particular independent of `p`) such that for
+every `1 ≤ p < ∞` (the blueprint takes `1 < p < ∞`), every finite family `m_u` (`u ∈ U`) of
+bounded measurable symbols supported in `[-1/8,1/8]ⁿ` with the Euclidean maximal bound
+`‖max_{u ∈ U} |m_u(D) F|‖_{L^p(E)} ≤ A ‖F‖_{L^p(E)}` for all Schwartz `F`, the periodizations
+satisfy `‖max_{u ∈ U} |(m_u)_per(D) f|‖_{ℓ^p(ℤⁿ)} ≤ C A ‖f‖_{ℓ^p(ℤⁿ)}` for every finitely
+supported `f`. Here `m_u(D) F = 𝓕⁻(m_u 𝓕 F)` (Mathlib sign) and `(m_u)_per(D) = latMult
+(periodize m_u)`. -/
+theorem sampling_maximal (n : ℕ) : ∃ C : ℝ, 0 < C ∧ ∀ (p : ℝ), 1 ≤ p → ∀ {ι : Type*}
+    (U : Finset ι) (m : ι → EuclideanSpace ℝ (Fin n) → ℂ) (B A : ℝ),
+    (∀ u ∈ U, AEStronglyMeasurable (m u) volume) → (∀ u ∈ U, ∀ ξ, ‖m u ξ‖ ≤ B) →
+    (∀ u ∈ U, Function.support (m u) ⊆ {ξ | ∀ i, |ξ i| ≤ 1 / 8}) →
+    (∀ F : 𝓢(EuclideanSpace ℝ (Fin n), ℂ),
+      eLpNorm (fun x => U.sup fun u =>
+          ‖𝓕⁻ (fun ξ => m u ξ * 𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ) ξ) x‖ₑ)
+        (ENNReal.ofReal p) volume ≤ ENNReal.ofReal A * eLpNorm F (ENNReal.ofReal p) volume) →
+    ∀ f : (Fin n → ℤ) → ℂ, (Function.support f).Finite →
+      eLpNorm (fun x => U.sup fun u => ‖latMult (periodize (m u)) f x‖ₑ) (ENNReal.ofReal p)
+          Measure.count ≤
+        ENNReal.ofReal (C * A) * eLpNorm f (ENNReal.ofReal p) Measure.count := by
+  set v := samplingV n
+  obtain ⟨S, hSt, hS⟩ := exists_tsum_enorm_sub_latEmbed_le v
+  set V := ∫⁻ x, ‖v x‖ₑ
+  have hVt : V ≠ (⊤ : ℝ≥0∞) := v.integrable.2.ne
+  set W : ℝ≥0∞ := V + S + 1
+  have hW0 : W ≠ 0 := by simp [W]
+  have hWt : W ≠ (⊤ : ℝ≥0∞) := by simp [W, hVt, hSt]
+  have hVW : V ≤ W := le_trans le_self_add le_self_add
+  have hSW : S ≤ W := le_trans le_add_self le_self_add
+  refine ⟨(W * W).toReal, ENNReal.toReal_pos (mul_ne_zero hW0 hW0) (ENNReal.mul_ne_top hWt hWt),
+    fun p hp ι U m B A hmeas hB hsupp hA f hf => ?_⟩
+  have hp0 : (0 : ℝ) < p := by linarith
+  have hpp : ENNReal.ofReal p ≠ 0 := by simpa using hp0
+  have hpt : ENNReal.ofReal p ≠ ⊤ := ENNReal.ofReal_ne_top
+  have hWp : W ^ (p - 1) * W = W ^ p := by
+    conv_rhs => rw [show p = (p - 1) + 1 by ring]
+    rw [ENNReal.rpow_add _ _ hW0 hWt, ENNReal.rpow_one]
+  set T := hf.toFinset
+  have hT : ∀ z ∉ T, f z = 0 := fun z hz => by simpa [T] using hz
+  set F := samplingF T f
+  set H : ι → EuclideanSpace ℝ (Fin n) → ℂ :=
+    fun u => 𝓕⁻ (fun ξ => m u ξ * 𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ) ξ)
+  set M : EuclideanSpace ℝ (Fin n) → ℝ≥0∞ := fun x => U.sup fun u => ‖H u x‖ₑ
+  have hGint : ∀ u ∈ U, Integrable (fun ξ => m u ξ * 𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ) ξ) := by
+    intro u hu
+    have h𝓕 : Integrable (𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ)) := by
+      rw [← SchwartzMap.fourier_coe]; exact (𝓕 F).integrable
+    exact h𝓕.bdd_mul (c := B) (hmeas u hu) (Filter.Eventually.of_forall (hB u hu))
+  have hHcont : ∀ u ∈ U, Continuous (H u) := fun u hu =>
+    continuous_fourierInv_of_integrable (hGint u hu)
+  have hMmeas : Measurable M := by
+    have : M = fun x => ⨆ u ∈ U, ‖H u x‖ₑ := by
+      funext x; simp only [M, Finset.sup_eq_iSup]
+    rw [this]
+    exact Measurable.biSup _ U.countable_toSet fun u hu => (hHcont u hu).enorm.measurable
+  -- the lattice values are samples of `M`
+  have hsample : ∀ z : Fin n → ℤ, (U.sup fun u => ‖latMult (periodize (m u)) f z‖ₑ) =
+      M (latEmbed z) := by
+    intro z
+    refine Finset.sup_congr rfl fun u hu => ?_
+    rw [← fourierInv_mul_fourier_samplingF hT (hmeas u hu) (hB u hu) (hsupp u hu) z]
+  -- the reproducing formula bounds the samples by a local average of `M`
+  have hloc : ∀ z : Fin n → ℤ, M (latEmbed z) ≤ ∫⁻ x, ‖v (latEmbed z - x)‖ₑ * M x := by
+    intro z
+    refine Finset.sup_le fun u hu => ?_
+    have hrep := fourierInv_eq_integral_samplingV_mul (hGint u hu) (fun ξ hξ => by
+      refine samplingPhi_eq_one (hsupp u hu ?_)
+      intro h0; exact hξ (by simp [h0])) (latEmbed z)
+    change ‖H u (latEmbed z)‖ₑ ≤ _
+    calc ‖H u (latEmbed z)‖ₑ = ‖∫ x, v x * H u (latEmbed z - x)‖ₑ := by rw [← hrep]
+      _ ≤ ∫⁻ x, ‖v x * H u (latEmbed z - x)‖ₑ := enorm_integral_le_lintegral_enorm _
+      _ ≤ ∫⁻ x, ‖v x‖ₑ * M (latEmbed z - x) := by
+          refine lintegral_mono fun x => ?_
+          rw [enorm_mul]
+          exact mul_le_mul_right (Finset.le_sup (f := fun u => ‖H u (latEmbed z - x)‖ₑ) hu) _
+      _ = ∫⁻ x, ‖v (latEmbed z - x)‖ₑ * M x := by
+          rw [← lintegral_sub_left_eq_self (fun x => ‖v (latEmbed z - x)‖ₑ * M x) (latEmbed z)]
+          simp only [sub_sub_cancel]
+  -- the sampling estimate
+  have hsamp : ∑' z : Fin n → ℤ, M (latEmbed z) ^ p ≤ W ^ p * ∫⁻ x, M x ^ p := by
+    refine (tsum_rpow_le_of_le_lintegral v (fun x => (hS x).2) le_rfl hp hMmeas.aemeasurable
+      hloc).trans ?_
+    rw [← hWp]
+    gcongr
+  -- the synthesis estimate
+  have hsyn : ∫⁻ x, ‖F x‖ₑ ^ p ≤ W ^ p * ∑' z, ‖f z‖ₑ ^ p := by
+    refine (lintegral_enorm_samplingF_rpow_le (fun x => (hS x).1) le_rfl hp T f).trans ?_
+    rw [← hWp]
+    gcongr
+  -- assemble
+  have hMp : ∫⁻ x, M x ^ p ≤ (ENNReal.ofReal A * eLpNorm F (ENNReal.ofReal p) volume) ^ p := by
+    have := (eLpNorm_ennreal_le_iff hpp hpt M hMmeas.aemeasurable _).1 (hA F)
+    rwa [ENNReal.toReal_ofReal hp0.le] at this
+  have hFp : eLpNorm F (ENNReal.ofReal p) volume ^ p ≤ W ^ p *
+      eLpNorm f (ENNReal.ofReal p) Measure.count ^ p := by
+    rw [eLpNorm_ofReal_eq_lintegral F.continuous.aestronglyMeasurable hp0,
+      eLpNorm_ofReal_eq_lintegral AEStronglyMeasurable.of_discrete hp0, ← ENNReal.rpow_mul,
+      ← ENNReal.rpow_mul, one_div_mul_cancel hp0.ne', ENNReal.rpow_one, ENNReal.rpow_one,
+      lintegral_count]
+    exact hsyn
+  rw [eLpNorm_ennreal_le_iff hpp hpt _ AEStronglyMeasurable.of_discrete.aemeasurable,
+    ENNReal.toReal_ofReal hp0.le, lintegral_count]
+  simp_rw [hsample]
+  rw [ENNReal.ofReal_mul ENNReal.toReal_nonneg, ENNReal.ofReal_toReal (ENNReal.mul_ne_top hWt hWt)]
+  calc ∑' z : Fin n → ℤ, M (latEmbed z) ^ p ≤ W ^ p * ∫⁻ x, M x ^ p := hsamp
+    _ ≤ W ^ p * (ENNReal.ofReal A * eLpNorm F (ENNReal.ofReal p) volume) ^ p := by gcongr
+    _ = W ^ p * (ENNReal.ofReal A ^ p * eLpNorm F (ENNReal.ofReal p) volume ^ p) := by
+        rw [ENNReal.mul_rpow_of_nonneg _ _ hp0.le]
+    _ ≤ W ^ p * (ENNReal.ofReal A ^ p * (W ^ p *
+          eLpNorm f (ENNReal.ofReal p) Measure.count ^ p)) := by gcongr
+    _ = (W * W * ENNReal.ofReal A * eLpNorm f (ENNReal.ofReal p) Measure.count) ^ p := by
+        simp only [ENNReal.mul_rpow_of_nonneg _ _ hp0.le]; ring
+
+
+/-! ### Dilations -/
+
+open scoped ENNReal in
+/-- `L^p` norms under dilation: `‖g(c ·)‖_p = |c|^{-n/p} ‖g‖_p` (in the form
+`(|c^n|⁻¹)^{1/p} ‖g‖_p`). -/
+lemma eLpNorm_comp_smul {g : EuclideanSpace ℝ (Fin n) → ℂ} (hg : AEStronglyMeasurable g volume)
+    {c : ℝ} (hc : c ≠ 0) {p : ℝ≥0∞} (hp : p ≠ ⊤) :
+    eLpNorm (fun x => g (c • x)) p volume =
+      ENNReal.ofReal (|c ^ n|⁻¹) ^ (1 / p).toReal * eLpNorm g p volume := by
+  have hmap := Measure.map_addHaar_smul (volume : Measure (EuclideanSpace ℝ (Fin n))) hc
+  rw [finrank_euclideanSpace_fin, abs_inv] at hmap
+  have h1 := eLpNorm_map_measure (p := p) (μ := volume)
+    (f := fun x : EuclideanSpace ℝ (Fin n) => c • x) (g := g) (by rw [hmap]; exact hg.smul_measure _) (continuous_const_smul c).aemeasurable
+  rw [hmap, eLpNorm_smul_measure_of_ne_top hp _ _ hg] at h1
+  rw [smul_eq_mul] at h1; exact h1.symm
+
+/-- Fourier transform of a dilation: `𝓕(F(q⁻¹ ·))(η) = qⁿ 𝓕 F (q η)`. -/
+lemma fourier_comp_inv_smul (F : EuclideanSpace ℝ (Fin n) → ℂ) {q : ℝ} (hq : 0 < q)
+    (η : EuclideanSpace ℝ (Fin n)) :
+    𝓕 (fun x => F (q⁻¹ • x)) η = (q ^ n : ℝ) * 𝓕 F (q • η) := by
+  rw [fourier_eq_integral_eC, fourier_eq_integral_eC]
+  have h := Measure.integral_comp_smul (μ := volume)
+    (fun x : EuclideanSpace ℝ (Fin n) => eC (-inner ℝ x η) * F (q⁻¹ • x)) q
+  rw [finrank_euclideanSpace_fin] at h
+  have h2 : ∀ x : EuclideanSpace ℝ (Fin n), eC (-inner ℝ (q • x) η) * F (q⁻¹ • q • x) =
+      eC (-inner ℝ x (q • η)) * F x := fun x => by
+    rw [inv_smul_smul₀ hq.ne', real_inner_smul_left, real_inner_smul_right]
+  simp_rw [h2] at h
+  rw [h, abs_of_pos (by positivity), Complex.real_smul, ← mul_assoc, ← Complex.ofReal_mul,
+    mul_inv_cancel₀ (by positivity), Complex.ofReal_one, one_mul]
+
+/-- Change of variables `ξ = q η` in an inverse Fourier integral. -/
+lemma fourierInv_mul_comp_inv_smul (m G : EuclideanSpace ℝ (Fin n) → ℂ) {q : ℝ} (hq : 0 < q)
+    (y : EuclideanSpace ℝ (Fin n)) :
+    𝓕⁻ (fun η => m η * ((q ^ n : ℝ) * G (q • η))) y =
+      𝓕⁻ (fun ξ => m (q⁻¹ • ξ) * G ξ) (q⁻¹ • y) := by
+  rw [fourierInv_eq_integral_eC, fourierInv_eq_integral_eC]
+  have h := Measure.integral_comp_smul (μ := volume)
+    (fun ξ : EuclideanSpace ℝ (Fin n) => eC (inner ℝ ξ (q⁻¹ • y)) * (m (q⁻¹ • ξ) * G ξ)) q
+  rw [finrank_euclideanSpace_fin] at h
+  have h2 : ∀ η : EuclideanSpace ℝ (Fin n),
+      eC (inner ℝ (q • η) (q⁻¹ • y)) * (m (q⁻¹ • q • η) * G (q • η)) =
+      eC (inner ℝ η y) * (m η * G (q • η)) := fun η => by
+    rw [inv_smul_smul₀ hq.ne', real_inner_smul_left, real_inner_smul_right,
+      mul_inv_cancel_left₀ hq.ne']
+  simp_rw [h2] at h
+  have h3 : ∀ η : EuclideanSpace ℝ (Fin n), eC (inner ℝ η y) * (m η * ((q ^ n : ℝ) * G (q • η))) =
+      ((q ^ n : ℝ) : ℂ) * (eC (inner ℝ η y) * (m η * G (q • η))) := fun η => by ring
+  simp_rw [h3]
+  rw [integral_const_mul, h, abs_of_pos (by positivity), Complex.real_smul, ← mul_assoc,
+    ← Complex.ofReal_mul, mul_inv_cancel₀ (by positivity), Complex.ofReal_one, one_mul]
+
+open scoped ENNReal in
+/-- Dilation invariance of Euclidean multiplier bounds: if `m(D)` is bounded on `L^p(E)` with
+norm `≤ A` (tested on Schwartz functions), so is `m(q⁻¹ D)` for every `q > 0`. -/
+theorem multiplier_bound_comp_inv_smul {m : EuclideanSpace ℝ (Fin n) → ℂ}
+    (hm : AEStronglyMeasurable m volume) {B : ℝ} (hB : ∀ ξ, ‖m ξ‖ ≤ B) {q : ℝ} (hq : 0 < q)
+    {p : ℝ} {A : ℝ}
+    (hA : ∀ F : 𝓢(EuclideanSpace ℝ (Fin n), ℂ),
+      eLpNorm (𝓕⁻ (fun ξ => m ξ * 𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ) ξ)) (ENNReal.ofReal p)
+        volume ≤ ENNReal.ofReal A * eLpNorm F (ENNReal.ofReal p) volume)
+    (F : 𝓢(EuclideanSpace ℝ (Fin n), ℂ)) :
+    eLpNorm (𝓕⁻ (fun ξ => m (q⁻¹ • ξ) * 𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ) ξ))
+      (ENNReal.ofReal p) volume ≤ ENNReal.ofReal A * eLpNorm F (ENNReal.ofReal p) volume := by
+  have hq0 : q ≠ 0 := hq.ne'
+  set F' : 𝓢(EuclideanSpace ℝ (Fin n), ℂ) := SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+    (ContinuousLinearEquiv.smulLeft (R₁ := ℝ) (Units.mk0 q⁻¹ (inv_ne_zero hq0))) F
+  have hF' : (F' : EuclideanSpace ℝ (Fin n) → ℂ) = fun x => F (q⁻¹ • x) := by
+    funext x; simp [F']
+  have hint : ∀ (m' : EuclideanSpace ℝ (Fin n) → ℂ), AEStronglyMeasurable m' volume →
+      (∀ ξ, ‖m' ξ‖ ≤ B) → ∀ G : 𝓢(EuclideanSpace ℝ (Fin n), ℂ),
+      Integrable (fun ξ => m' ξ * 𝓕 (G : EuclideanSpace ℝ (Fin n) → ℂ) ξ) := by
+    intro m' hm' hB' G
+    have h𝓕 : Integrable (𝓕 (G : EuclideanSpace ℝ (Fin n) → ℂ)) := by
+      rw [← SchwartzMap.fourier_coe]; exact (𝓕 G).integrable
+    exact h𝓕.bdd_mul (c := B) hm' (Filter.Eventually.of_forall hB')
+  have hmq : AEStronglyMeasurable (fun ξ => m (q⁻¹ • ξ)) volume :=
+    hm.comp_quasiMeasurePreserving (Measure.quasiMeasurePreserving_smul volume (inv_ne_zero hq0))
+  -- `m(q⁻¹ D) F = (m(D) F')(q ·)`
+  have hkey : 𝓕⁻ (fun ξ => m (q⁻¹ • ξ) * 𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ) ξ) =
+      fun x => 𝓕⁻ (fun ξ => m ξ * 𝓕 (F' : EuclideanSpace ℝ (Fin n) → ℂ) ξ) (q • x) := by
+    funext x
+    rw [hF']
+    simp_rw [fourier_comp_inv_smul _ hq]
+    rw [fourierInv_mul_comp_inv_smul _ _ hq, inv_smul_smul₀ hq0]
+  have hpt : ENNReal.ofReal p ≠ ⊤ := ENNReal.ofReal_ne_top
+  rw [hkey, eLpNorm_comp_smul
+    (continuous_fourierInv_of_integrable (hint m hm hB F')).aestronglyMeasurable hq0 hpt]
+  have hF'n : eLpNorm F' (ENNReal.ofReal p) volume =
+      ENNReal.ofReal (|q⁻¹ ^ n|⁻¹) ^ (1 / ENNReal.ofReal p).toReal *
+        eLpNorm F (ENNReal.ofReal p) volume := by
+    rw [hF']
+    exact eLpNorm_comp_smul F.continuous.aestronglyMeasurable (inv_ne_zero hq0) hpt
+  calc ENNReal.ofReal (|q ^ n|⁻¹) ^ (1 / ENNReal.ofReal p).toReal *
+        eLpNorm (𝓕⁻ (fun ξ => m ξ * 𝓕 (F' : EuclideanSpace ℝ (Fin n) → ℂ) ξ))
+          (ENNReal.ofReal p) volume
+      ≤ ENNReal.ofReal (|q ^ n|⁻¹) ^ (1 / ENNReal.ofReal p).toReal *
+          (ENNReal.ofReal A * eLpNorm F' (ENNReal.ofReal p) volume) := by gcongr; exact hA F'
+    _ = (ENNReal.ofReal (|q ^ n|⁻¹) * ENNReal.ofReal (|q⁻¹ ^ n|⁻¹)) ^
+          (1 / ENNReal.ofReal p).toReal *
+          (ENNReal.ofReal A * eLpNorm F (ENNReal.ofReal p) volume) := by
+        rw [hF'n, ENNReal.mul_rpow_of_nonneg _ _ ENNReal.toReal_nonneg]; ring
+    _ = ENNReal.ofReal A * eLpNorm F (ENNReal.ofReal p) volume := by
+        rw [← ENNReal.ofReal_mul (by positivity), inv_pow, abs_inv, inv_inv,
+          inv_mul_cancel₀ (by positivity), ENNReal.ofReal_one, ENNReal.one_rpow, one_mul]
+
+
+/-! ### The operator `Δ_q` -/
+
+/-- The point `b/q ∈ (q⁻¹ℤ/ℤ)ⁿ`, `b ∈ {0, …, q-1}ⁿ`, as an element of `E`. -/
+noncomputable def gridPt (q : ℕ) (b : Fin n → Fin q) : EuclideanSpace ℝ (Fin n) :=
+  WithLp.toLp 2 (fun i => ((b i : ℕ) : ℝ) / q)
+
+/-- The symbol `Δ_q m(ξ) = ∑_{β ∈ (q⁻¹ℤ/ℤ)ⁿ} m_per(ξ - β)` of Blueprint Lemma 6.2
+(`lem:sampling`), with `β = b/q`, `b ∈ {0, …, q-1}ⁿ`. -/
+noncomputable def gridSym (q : ℕ) (m : EuclideanSpace ℝ (Fin n) → ℂ)
+    (ξ : EuclideanSpace ℝ (Fin n)) : ℂ :=
+  ∑ b : Fin n → Fin q, periodize m (ξ - gridPt q b)
+
+/-- `m_per(ξ - β) = (m(· - β))_per(ξ)`. -/
+lemma periodize_comp_sub (m : EuclideanSpace ℝ (Fin n) → ℂ) (β ξ : EuclideanSpace ℝ (Fin n)) :
+    periodize m (ξ - β) = periodize (fun η => m (η - β)) ξ := by
+  unfold periodize
+  congr 1; funext k; congr 1; abel
+
+/-- `Δ_q m` as a sum of periodizations of translates of `m`. -/
+lemma gridSym_eq (q : ℕ) (m : EuclideanSpace ℝ (Fin n) → ℂ) :
+    gridSym q m = fun ξ => ∑ b : Fin n → Fin q, periodize (fun η => m (η - gridPt q b)) ξ := by
+  funext ξ; simp only [gridSym, periodize_comp_sub]
+
+/-- Modulation: `𝓕⁻(m(· - β))(y) = e(β · y) 𝓕⁻ m (y)`. -/
+lemma fourierInv_comp_sub (m : EuclideanSpace ℝ (Fin n) → ℂ) (β y : EuclideanSpace ℝ (Fin n)) :
+    𝓕⁻ (fun η => m (η - β)) y = eC (inner ℝ β y) * 𝓕⁻ m y := by
+  rw [fourierInv_eq_integral_eC, fourierInv_eq_integral_eC, ← integral_const_mul]
+  have h := integral_sub_right_eq_self (μ := volume)
+    (fun η => eC (inner ℝ (η + β) y) * m η) β
+  simp only [sub_add_cancel] at h
+  rw [h]
+  congr 1; funext η
+  rw [inner_add_left, eC_add]; ring
+
+/-- `e(∑ t_i) = ∏ e(t_i)`. -/
+lemma eC_sum {ι : Type*} (s : Finset ι) (t : ι → ℝ) :
+    eC (∑ i ∈ s, t i) = ∏ i ∈ s, eC (t i) := by
+  unfold eC
+  rw [← Complex.exp_sum]
+  congr 1; push_cast; rw [Finset.mul_sum]
+
+/-- The one-dimensional geometric sum `∑_{j < q} e(j t / q) = q 𝟙_{q ∣ t}`. -/
+lemma sum_eC_div (q : ℕ) (hq : 1 ≤ q) (t : ℤ) :
+    ∑ j : Fin q, eC ((j : ℕ) * t / q) = if (q : ℤ) ∣ t then (q : ℂ) else 0 := by
+  have hq0 : (q : ℝ) ≠ 0 := by exact_mod_cast (show q ≠ 0 by omega)
+  set w := eC (t / q)
+  have hpow : ∀ j : ℕ, eC (j * t / q) = w ^ j := by
+    intro j
+    simp only [w, eC]
+    rw [← Complex.exp_nat_mul]
+    congr 1; push_cast; ring
+  simp_rw [hpow]
+  rw [Fin.sum_univ_eq_sum_range (fun j => w ^ j) q]
+  split_ifs with hdiv
+  · obtain ⟨k, hk⟩ := hdiv
+    have : w = 1 := by
+      rw [eC_eq_one_iff]
+      exact ⟨k, by rw [hk]; push_cast; field_simp⟩
+    simp [this]
+  · have hw : w ≠ 1 := by
+      intro h
+      obtain ⟨k, hk⟩ := (eC_eq_one_iff _).1 h
+      apply hdiv
+      refine ⟨k, ?_⟩
+      have : (t : ℝ) = q * k := by field_simp at hk; linarith
+      exact_mod_cast this
+    have hwq : w ^ q = 1 := by
+      rw [← hpow, eC_eq_one_iff]
+      exact ⟨t, by field_simp⟩
+    rw [geom_sum_eq hw, hwq, sub_self, zero_div]
+
+/-- The character sum over the grid: `∑_β e(β · y) = qⁿ 𝟙_{q ∣ y}`. -/
+lemma sum_eC_gridPt (q : ℕ) (hq : 1 ≤ q) (y : Fin n → ℤ) :
+    ∑ b : Fin n → Fin q, eC (inner ℝ (gridPt q b) (latEmbed y)) =
+      if ∀ i, (q : ℤ) ∣ y i then (q : ℂ) ^ n else 0 := by
+  have h1 : ∀ b : Fin n → Fin q, eC (inner ℝ (gridPt q b) (latEmbed y)) =
+      ∏ i, eC (((b i : ℕ) : ℝ) * y i / q) := by
+    intro b
+    rw [← eC_sum]
+    congr 1
+    simp only [gridPt, PiLp.inner_apply, latEmbed_apply, RCLike.inner_apply, conj_trivial]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    ring
+  simp_rw [h1]
+  rw [← Fintype.prod_sum (fun (i : Fin n) (j : Fin q) => eC (((j : ℕ) : ℝ) * y i / q))]
+  simp_rw [sum_eC_div q hq]
+  rw [Finset.prod_ite_zero, Finset.prod_const, Finset.card_univ, Fintype.card_fin]
+  simp only [Finset.mem_univ, true_imp_iff]
+
+
+/-- Inverse Fourier transform of a dilated symbol: `𝓕⁻(m(q⁻¹ ·))(a) = qⁿ 𝓕⁻ m (q a)`. -/
+lemma fourierInv_comp_inv_smul (m : EuclideanSpace ℝ (Fin n) → ℂ) {q : ℝ} (hq : 0 < q)
+    (a : EuclideanSpace ℝ (Fin n)) :
+    𝓕⁻ (fun ξ => m (q⁻¹ • ξ)) a = (q ^ n : ℝ) * 𝓕⁻ m (q • a) := by
+  rw [fourierInv_eq_integral_eC, fourierInv_eq_integral_eC]
+  have h := Measure.integral_comp_smul (μ := volume)
+    (fun η : EuclideanSpace ℝ (Fin n) => eC (inner ℝ η (q • a)) * m η) q⁻¹
+  rw [finrank_euclideanSpace_fin] at h
+  have h2 : ∀ ξ : EuclideanSpace ℝ (Fin n), eC (inner ℝ (q⁻¹ • ξ) (q • a)) * m (q⁻¹ • ξ) =
+      eC (inner ℝ ξ a) * m (q⁻¹ • ξ) := fun ξ => by
+    rw [real_inner_smul_left, real_inner_smul_right, inv_mul_cancel_left₀ hq.ne']
+  simp_rw [h2] at h
+  rw [h, inv_pow, inv_inv, abs_of_pos (by positivity), Complex.real_smul]
+
+/-- `m_per(ξ) e(y · ξ)` is integrable on the torus for integrable `m`. -/
+lemma integrableOn_periodize_mul_eC {m : EuclideanSpace ℝ (Fin n) → ℂ} (hm : Integrable m)
+    (y : Fin n → ℤ) :
+    IntegrableOn (fun ξ => periodize m ξ * eC (inner ℝ (latEmbed y) ξ)) (torusCube n) :=
+  (integrableOn_periodize hm).mul_bdd (c := 1) (by fun_prop)
+    (Filter.Eventually.of_forall fun ξ => le_of_eq (norm_eC _))
+
+/-- `Δ_q m` is integrable on the torus for integrable `m`. -/
+lemma integrableOn_gridSym {m : EuclideanSpace ℝ (Fin n) → ℂ} (hm : Integrable m) (q : ℕ) :
+    IntegrableOn (gridSym q m) (torusCube n) := by
+  rw [gridSym_eq]
+  exact integrable_finsetSum _ fun b _ => integrableOn_periodize (hm.comp_sub_right _)
+
+/-- The kernel of `Δ_q m`: `(Δ_q m)ˇ(y) = qⁿ 𝟙_{q ∣ y} 𝓕⁻ m (y)`. -/
+theorem latKernel_gridSym {m : EuclideanSpace ℝ (Fin n) → ℂ} (hm : Integrable m) {q : ℕ}
+    (hq : 1 ≤ q) (y : Fin n → ℤ) :
+    latKernel (gridSym q m) y =
+      (if ∀ i, (q : ℤ) ∣ y i then (q : ℂ) ^ n else 0) * 𝓕⁻ m (latEmbed y) := by
+  rw [← sum_eC_gridPt q hq y, Finset.sum_mul, latKernel, gridSym_eq]
+  simp only [Finset.sum_mul]
+  rw [integral_finsetSum _ fun b _ => integrableOn_periodize_mul_eC (hm.comp_sub_right _) y]
+  refine Finset.sum_congr rfl fun b _ => ?_
+  rw [← latKernel, latKernel_periodize (hm.comp_sub_right _), fourierInv_comp_sub]
+
+/-- The residue-class identity: on the class `r + qℤⁿ`, `Δ_q m(D) f(x' q + r)` is the lattice
+multiplier with symbol `m(·/q)_per` applied to `z ↦ f(z q + r)`, evaluated at `x'`. -/
+theorem latMult_gridSym_residue {m : EuclideanSpace ℝ (Fin n) → ℂ} (hm : Integrable m) {q : ℕ}
+    (hq : 1 ≤ q) (hmq : Integrable fun ξ => m ((q : ℝ)⁻¹ • ξ)) {f : (Fin n → ℤ) → ℂ}
+    (hf : Summable fun z => ‖f z‖) (x' : Fin n → ℤ) (r : Fin n → Fin q) :
+    latMult (gridSym q m) f (fun i => x' i * q + ((r i : ℕ) : ℤ)) =
+      latMult (periodize fun ξ => m ((q : ℝ)⁻¹ • ξ))
+        (fun z => f (fun i => z i * q + ((r i : ℕ) : ℤ))) x' := by
+  have hq0 : (q : ℤ) ≠ 0 := by exact_mod_cast (show q ≠ 0 by omega)
+  have hqR : (0 : ℝ) < q := by exact_mod_cast (show 0 < q by omega)
+  set ιq : (Fin n → ℤ) → (Fin n → ℤ) := fun w i => w i * q
+  have hinj : Function.Injective ιq := fun w w' h => funext fun i => by
+    have := congrFun h i
+    exact mul_right_cancel₀ hq0 this
+  have hinjr : Function.Injective fun z : Fin n → ℤ => fun i => z i * q + ((r i : ℕ) : ℤ) :=
+    fun w w' h => hinj (funext fun i => add_right_cancel (congrFun h i))
+  have hfr : Summable fun z : Fin n → ℤ => ‖f (fun i => z i * q + ((r i : ℕ) : ℤ))‖ :=
+    hf.comp_injective hinjr
+  rw [latMult_eq_latConv (integrableOn_gridSym hm q) hf,
+    latMult_eq_latConv (integrableOn_periodize hmq) hfr, latConv, latConv]
+  rw [← hinj.tsum_eq]
+  · refine tsum_congr fun w => ?_
+    have hdiv : ∀ i, (q : ℤ) ∣ ιq w i := fun i => dvd_mul_left _ _
+    rw [latKernel_gridSym hm hq, ite_eq_left hdiv, latKernel_periodize hmq,
+      fourierInv_comp_inv_smul _ hqR]
+    have hsm : (q : ℝ) • latEmbed w = latEmbed (ιq w) := by
+      ext i; simp [ιq, mul_comm]
+    rw [hsm]
+    push_cast
+    congr 1
+    congr 1; funext i; simp only [ιq, Pi.sub_apply]; ring
+  · intro y hy
+    have hne : latKernel (gridSym q m) y ≠ 0 := left_ne_zero_of_mul hy
+    rw [latKernel_gridSym hm hq] at hne
+    have hdiv : ∀ i, (q : ℤ) ∣ y i := by
+      by_contra h; rw [ite_eq_right h, zero_mul] at hne; exact hne rfl
+    exact ⟨fun i => y i / q, funext fun i => Int.ediv_mul_cancel (hdiv i)⟩
+
+
+/-! ### Blueprint Lemma 6.2: single symbols and `Δ_q` -/
+
+open scoped ENNReal in
+/-- Blueprint Lemma 6.2 (`lem:sampling`), first assertion for a single symbol: there is `C`
+(depending only on `n`) such that for `1 ≤ p < ∞`, a bounded measurable symbol `m` supported in
+`[-1/8,1/8]ⁿ` with Euclidean multiplier norm `≤ A` on `L^p(E)` (tested on Schwartz functions)
+satisfies `‖m_per(D) f‖_{ℓ^p} ≤ C A ‖f‖_{ℓ^p}` for finitely supported `f`. -/
+theorem sampling_single (n : ℕ) : ∃ C : ℝ, 0 < C ∧ ∀ (p : ℝ), 1 ≤ p →
+    ∀ (m : EuclideanSpace ℝ (Fin n) → ℂ) (B A : ℝ), AEStronglyMeasurable m volume →
+    (∀ ξ, ‖m ξ‖ ≤ B) → Function.support m ⊆ {ξ | ∀ i, |ξ i| ≤ 1 / 8} →
+    (∀ F : 𝓢(EuclideanSpace ℝ (Fin n), ℂ),
+      eLpNorm (𝓕⁻ (fun ξ => m ξ * 𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ) ξ))
+        (ENNReal.ofReal p) volume ≤ ENNReal.ofReal A * eLpNorm F (ENNReal.ofReal p) volume) →
+    ∀ f : (Fin n → ℤ) → ℂ, (Function.support f).Finite →
+      eLpNorm (latMult (periodize m) f) (ENNReal.ofReal p) Measure.count ≤
+        ENNReal.ofReal (C * A) * eLpNorm f (ENNReal.ofReal p) Measure.count := by
+  obtain ⟨C, hC, h⟩ := sampling_maximal n
+  refine ⟨C, hC, fun p hp m B A hm hB hsupp hA f hf => ?_⟩
+  have key := h p hp ({()} : Finset Unit) (fun _ => m) B A (fun _ _ => hm) (fun _ _ => hB)
+    (fun _ _ => hsupp) (fun F => by
+      simp only [Finset.sup_singleton]
+      rw [eLpNorm_enorm _ (continuous_fourierInv_of_integrable (by
+        have h𝓕 : Integrable (𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ)) := by
+          rw [← SchwartzMap.fourier_coe]; exact (𝓕 F).integrable
+        exact h𝓕.bdd_mul (c := B) hm (Filter.Eventually.of_forall hB))).aestronglyMeasurable]
+      exact hA F) f hf
+  simp only [Finset.sup_singleton] at key
+  rwa [eLpNorm_enorm _ AEStronglyMeasurable.of_discrete] at key
+
+open scoped ENNReal in
+/-- An `ℓ^p(ℤⁿ)` bound `‖g‖_p ≤ K ‖h‖_p` in terms of `p`-th power sums. -/
+lemma tsum_rpow_le_of_eLpNorm_le {g h : (Fin n → ℤ) → ℂ} {K : ℝ≥0∞} {p : ℝ} (hp : 0 < p)
+    (hK : eLpNorm g (ENNReal.ofReal p) Measure.count ≤
+      K * eLpNorm h (ENNReal.ofReal p) Measure.count) :
+    ∑' x, ‖g x‖ₑ ^ p ≤ K ^ p * ∑' x, ‖h x‖ₑ ^ p := by
+  rw [eLpNorm_ofReal_eq_lintegral AEStronglyMeasurable.of_discrete hp,
+    eLpNorm_ofReal_eq_lintegral AEStronglyMeasurable.of_discrete hp, lintegral_count,
+    lintegral_count] at hK
+  have h2 := ENNReal.rpow_le_rpow hK hp.le
+  rwa [← ENNReal.rpow_mul, one_div_mul_cancel hp.ne', ENNReal.rpow_one,
+    ENNReal.mul_rpow_of_nonneg _ _ hp.le, ← ENNReal.rpow_mul, one_div_mul_cancel hp.ne',
+    ENNReal.rpow_one] at h2
+
+open scoped ENNReal in
+/-- Converse of `tsum_rpow_le_of_eLpNorm_le`: a bound on `p`-th power sums gives an `ℓ^p` bound. -/
+lemma eLpNorm_le_of_tsum_rpow_le {g h : (Fin n → ℤ) → ℂ} {K : ℝ≥0∞} {p : ℝ} (hp : 0 < p)
+    (hK : ∑' x, ‖g x‖ₑ ^ p ≤ K ^ p * ∑' x, ‖h x‖ₑ ^ p) :
+    eLpNorm g (ENNReal.ofReal p) Measure.count ≤
+      K * eLpNorm h (ENNReal.ofReal p) Measure.count := by
+  rw [eLpNorm_ofReal_eq_lintegral AEStronglyMeasurable.of_discrete hp,
+    eLpNorm_ofReal_eq_lintegral AEStronglyMeasurable.of_discrete hp, lintegral_count,
+    lintegral_count]
+  have h2 := ENNReal.rpow_le_rpow hK (by positivity : (0 : ℝ) ≤ 1 / p)
+  rwa [ENNReal.mul_rpow_of_nonneg _ _ (by positivity), ← ENNReal.rpow_mul,
+    mul_one_div_cancel hp.ne', ENNReal.rpow_one] at h2
+
+open scoped ENNReal in
+/-- Splitting an `ℓ^p` sum into residue classes modulo `q`. -/
+lemma tsum_enorm_rpow_eq_residues {q : ℕ} [NeZero q] (g : (Fin n → ℤ) → ℂ) (p : ℝ) :
+    ∑' x, ‖g x‖ₑ ^ p = ∑' r : Fin n → Fin q, ∑' x' : Fin n → ℤ,
+      ‖g (fun i => x' i * q + ((r i : ℕ) : ℤ))‖ₑ ^ p := by
+  rw [← (residueEquiv n q).symm.tsum_eq]
+  exact (ENNReal.tsum_prod (f := fun x' r => ‖g ((residueEquiv n q).symm (x', r))‖ₑ ^ p)).trans
+    ENNReal.tsum_comm
+
+open scoped ENNReal in
+/-- Blueprint Lemma 6.2 (`lem:sampling`), second assertion (the operator `Δ_q`): there is `C`
+(depending only on `n`; in particular independent of `q` and of `p`) such that for every
+`1 ≤ p < ∞` (the blueprint takes `1 < p < ∞`), every `q ≥ 1` and every bounded measurable `m`
+supported in `[-1/(8q), 1/(8q)]ⁿ` with Euclidean `L^p(E)` multiplier norm `≤ A` (tested on
+Schwartz functions), the symbol `Δ_q m(ξ) = ∑_{β ∈ (q⁻¹ℤ/ℤ)ⁿ} m_per(ξ - β)` (`gridSym q m`)
+satisfies `‖(Δ_q m)(D) f‖_{ℓ^p} ≤ C A ‖f‖_{ℓ^p}` for finitely supported `f`. -/
+theorem sampling_gridSym (n : ℕ) : ∃ C : ℝ, 0 < C ∧ ∀ (p : ℝ), 1 ≤ p → ∀ q : ℕ, 1 ≤ q →
+    ∀ (m : EuclideanSpace ℝ (Fin n) → ℂ) (B A : ℝ), AEStronglyMeasurable m volume →
+    (∀ ξ, ‖m ξ‖ ≤ B) → Function.support m ⊆ {ξ | ∀ i, |ξ i| ≤ 1 / (8 * q)} →
+    (∀ F : 𝓢(EuclideanSpace ℝ (Fin n), ℂ),
+      eLpNorm (𝓕⁻ (fun ξ => m ξ * 𝓕 (F : EuclideanSpace ℝ (Fin n) → ℂ) ξ))
+        (ENNReal.ofReal p) volume ≤ ENNReal.ofReal A * eLpNorm F (ENNReal.ofReal p) volume) →
+    ∀ f : (Fin n → ℤ) → ℂ, (Function.support f).Finite →
+      eLpNorm (latMult (gridSym q m) f) (ENNReal.ofReal p) Measure.count ≤
+        ENNReal.ofReal (C * A) * eLpNorm f (ENNReal.ofReal p) Measure.count := by
+  obtain ⟨C, hC, hsing⟩ := sampling_single n
+  refine ⟨C, hC, fun p hp q hq m B A hm hB hsupp hA f hf => ?_⟩
+  have : NeZero q := ⟨by omega⟩
+  have hp0 : (0 : ℝ) < p := by linarith
+  have hqR : (0 : ℝ) < q := by exact_mod_cast (show 0 < q by omega)
+  set mq : EuclideanSpace ℝ (Fin n) → ℂ := fun ξ => m ((q : ℝ)⁻¹ • ξ)
+  have hmq : AEStronglyMeasurable mq volume :=
+    hm.comp_quasiMeasurePreserving
+      (Measure.quasiMeasurePreserving_smul volume (inv_ne_zero hqR.ne'))
+  have hBq : ∀ ξ, ‖mq ξ‖ ≤ B := fun ξ => hB _
+  have hsuppq : Function.support mq ⊆ {ξ | ∀ i, |ξ i| ≤ 1 / 8} := by
+    intro ξ hξ i
+    have h := hsupp hξ i
+    simp only [PiLp.smul_apply, smul_eq_mul, abs_mul, abs_inv, abs_of_pos hqR] at h
+    rw [inv_mul_le_iff₀ hqR] at h
+    calc |ξ i| ≤ q * (1 / (8 * q)) := h
+      _ = 1 / 8 := by field_simp
+  have hm_int : Integrable m := integrable_of_bound_of_support_subset hm hB (by positivity) hsupp
+  have hmq_int : Integrable mq :=
+    integrable_of_bound_of_support_subset hmq hBq (by norm_num) hsuppq
+  have hAq := multiplier_bound_comp_inv_smul hm hB (inv_pos.1 (inv_pos.2 hqR)) hA
+  have hfs : Summable fun z => ‖f z‖ :=
+    summable_of_ne_finset_zero (s := hf.toFinset) fun z hz => by
+      simp only [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hz; simp [hz]
+  -- each residue class
+  have hres : ∀ r : Fin n → Fin q,
+      ∑' x' : Fin n → ℤ, ‖latMult (gridSym q m) f (fun i => x' i * q + ((r i : ℕ) : ℤ))‖ₑ ^ p ≤
+        ENNReal.ofReal (C * A) ^ p *
+          ∑' x' : Fin n → ℤ, ‖f (fun i => x' i * q + ((r i : ℕ) : ℤ))‖ₑ ^ p := by
+    intro r
+    set fr : (Fin n → ℤ) → ℂ := fun z => f (fun i => z i * q + ((r i : ℕ) : ℤ))
+    have hinj : Function.Injective fun z : Fin n → ℤ => fun i => z i * q + ((r i : ℕ) : ℤ) :=
+      fun w w' h => funext fun i => mul_right_cancel₀ (by exact_mod_cast hqR.ne')
+        (add_right_cancel (congrFun h i))
+    have hfr : (Function.support fr).Finite := hf.preimage hinj.injOn
+    have := hsing p hp mq B A hmq hBq hsuppq (fun F => hAq F) fr hfr
+    simp_rw [latMult_gridSym_residue hm_int hq hmq_int hfs]
+    exact tsum_rpow_le_of_eLpNorm_le hp0 this
+  refine eLpNorm_le_of_tsum_rpow_le hp0 ?_
+  rw [tsum_enorm_rpow_eq_residues (q := q), tsum_enorm_rpow_eq_residues (q := q) f,
+    ← ENNReal.tsum_mul_left]
+  exact ENNReal.tsum_le_tsum hres
 
 end Auto

@@ -55,3 +55,23 @@
   supremum is reached by a clamped rational parametrization of admissible `μ` and continuity, for every
   `f ∈ L^p` directly (no Schwartz density step); σ_p = (2D)^{-1} min(1/p, 1/p') as in the blueprint.
   Resolved.
+- 2026-09-27T23:52:44-04:00 — Lemma 7.3 (`lem:sunflower`): (7.2) proved with constant `(2(r+1)(k+1))^{r(k+1)}` by an induction
+  on `k` (heavy element vs. no heavy element) instead of the blueprint's M-sample probabilistic argument
+  with constant `(4M²)^r`; the Erdős–Rado step is proved separately as stated. Lemma 7.2: subset version
+  constant `∑_{l≤k} (2rl)^l` via weighted coloring averages. Resolved (constants only depend on k, r).
+- 2026-09-28T01:06:25-04:00 — Lemma 7.6 (`lem:companion`): t = ∞ case uses the radial weight `(1+ε²|y|²)^{n+1}` (with
+  `Φ = (1 − Δ/4π²)^{n+1}θ`) instead of `∏(1+ε²y_i²)`, and Bessel's inequality instead of exact
+  orthogonality; t = ∞ and 2 < t < ∞ are proved for finitely supported inputs, t = 2 for ℓ¹. Resolved.
+- 2026-09-28T01:53:00-04:00 — Theorem 7.7 (`thm:IW`): the 2r bound is proved directly for bounded measurable symbols by
+  windowing the pieces `f_α · w_N` (ℓ¹, same Fourier support) and letting `N → ∞`, replacing the
+  blueprint's frequency mollification step; torus Fourier inversion (implicit in the blueprint's
+  factorization) is proved (`latFT_latKernel_of_continuous`); duality uses the lattice reflection
+  `R g = conj g(−·)` instead of the Euclidean reflection of `m`. Hypotheses: `r ≥ 1`,
+  `AEStronglyMeasurable m`, finitely supported `f`. Resolved.
+- 2026-09-28T02:34:09-04:00 — Lemma 8.1 (`lem:minorL2`): proved for all `f ∈ ℓ²` and all real κ, with `j₁, C` uniform in
+  `M ≥ M₀`; the cube localization + Hilbert–Schmidt + bounded overlap are replaced by a global Schur
+  test on the TT* kernel (column bound from the same bad-pair counting); slicing recentred at `x` so the
+  degree-(D−1) coefficient is directly `D(y₁−x₁)λ_y`. Resolved (route change).
+- 2026-09-28T05:31:24-04:00 — Lemma 10.1 (`lem:lifttrunc`): Mathlib sign (`e(−u·ξ)`, `e(x·β)`); the Minkowski average over
+  `𝒱_s` is replaced by choosing a `u` whose shifted main term is at most the average; pointwise bounds
+  hold for all `J` at once (no finite-`J` step). Resolved (route change).
