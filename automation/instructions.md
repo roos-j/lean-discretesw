@@ -51,10 +51,15 @@ Here `K y = Ω y / ‖y‖^n`, `P_ℤ(y) = (∑ yᵢ²)^d`, `e(t) = exp(2πit)`.
 ## Files and conventions
 
 - Lean library `DiscreteSW` (default root), top-level import file `DiscreteSW.lean`.
-- Main formalization (R11): the single file `DiscreteSW/Auto/DiscreteSteinWainger.lean`, one `section` per
-  former module (Foundations = §1/§14.1 defs, Tools = §2, Arithmetic = §3, RealVariable = §4,
-  Oscillation = §5, Sampling = §6, RationalFrequency = §7, MinorArcs = §8, Lifting = §9, Truncation = §10,
-  Bands = §11, MajorArcs = §12, DiscreteSteinWainger = §13), all in `namespace Auto`.
+- Main formalization (R19; supersedes the R11 single file): files aligned with the sections of the
+  original paper KR II = Krause–Roos, arXiv:2107.14616v2 (KR I = arXiv:1907.00405v3 where cited), all in
+  `DiscreteSW/Auto/`, namespace `Auto`, each ≤ 10,000 lines, imported in this logical order:
+  `Sec2_1Notation` (KR II §2.1; blueprint §1, §2 except L2.7), `Sec2_2ExponentialSums` (§2.2; bp §3),
+  `Sec2_4_2_5MultiplierApproximations` (§2.4–2.5, KR I §2; bp L2.7, §4, §5), `Sec2_3IonescuWainger`
+  (§2.3, KR I §2.1; bp §6, §7), `Sec5MajorArcParameters` (§5, KR I §4; bp §8), `Sec4MainArgument`
+  (§4, KR I §§6–7; bp §§9–11), `Sec6ErrorEstimate` (§6; bp L12.1), `DiscreteSteinWainger` (§3 and
+  Theorem 1.1; bp L12.2, P12.3, §13). Justification: KR II §2 exceeds 10k lines, so it is split at its
+  subsections (2.4 and 2.5 combined, transference kept with 2.3 where KR II uses it).
 - Reusable-prerequisite files (standing exception): one file each directly in `DiscreteSW/Auto/`,
   justified in `automation/Status.md`.
 - Header: Mathlib-linter-compliant form per R14 (see above). Copyright holder from Git author attribution.
@@ -110,6 +115,13 @@ Here `K y = Ω y / ‖y‖^n`, `P_ℤ(y) = (∑ yᵢ²)^d`, `e(t) = exp(2πit)`.
   asking further questions.
 - (R16, raw entry R16) Migrate the whole repo to Lean's module system (`module`, `public import`, …)
   and update the skill (both editions) to use the module system from the start; then commit and push.
+- (R17, raw entry R17) Skill updated (both editions): extra files allowed along top-level section
+  boundaries of the original source (original papers when the source is a machine-generated blueprint),
+  finer only to respect a hard limit of 10,000 lines per Lean file.
+- (R18, raw entry R18) Only SUGGEST a split of `DiscreteSteinWainger.lean` along sections of the arXiv
+  papers (Krause–Roos 2107.14616v2, with 1907.00405v3 where it is cited); do not implement yet.
+- (R19, raw entry R19) Perform the suggested split (KR II section-aligned files, see "Files and conventions").
+- (R20, raw entry R20) One-off: commit and push the KR II section split.
 - R10 result: with the project's configuration (Lean default linters) every module has 0 warnings.
 - Maintenance only (keep building on Mathlib
   updates). Discrepancies and route changes are listed in `automation/ErrorReport.md`.
