@@ -35,6 +35,6 @@ theorem discrete_carleson_stein_wainger (hn : 1 ≤ n) (hd : 1 ≤ d) {K : ℝ^n
     ∃ C : ℝ, ∀ f : ℤ^n → ℂ, MemLp f p .count →
       (∀ t x, Summable (discreteCarlesonSummand d K f x t)) ∧
         eLpNorm (discreteCarleson d K f) p .count ≤ ENNReal.ofReal C * eLpNorm f p .count :=
-  sorry
+  Auto.discrete_carleson_stein_wainger hn hd hK hp hp'
 
 end
