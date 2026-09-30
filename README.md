@@ -1,7 +1,7 @@
-# Formalization of the discrete Stein-Wainger theorem
+# Formalization of a discrete Carleson operator of Stein-Wainger type
 
 This is a formalization in Lean 4 of the main result on $\ell^p$ bounds for 
-a discrete maximally modulated singular oscillatory operator of Stein-Wainger type, proved in the following two papers (the first is the $p = 2$ case):
+a discrete maximal singular oscillatory operator (also called a discrete Carleson operator) of Stein-Wainger type, proved in the following two papers (the first paper concerns the $p = 2$ case):
 
 - B. Krause, J. Roos, *Discrete analogues of maximally modulated singular integrals of Stein–Wainger type*,
   J. Eur. Math. Soc. (JEMS) **24** (2022), no. 9, 3183–3213.
