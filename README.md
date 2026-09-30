@@ -13,3 +13,4 @@ This step was completed using `GPT 6 Astra Pro`.
 In the next step, the machine-generated blueprint was used to autoformalize the
 proof using `Claude Opus 5.5 Medium`.
 
+Finally, human Lean statements for the main theorem and the required definitions were added in `Defs.lean` and `Theorems.lean`. All machine-generated code lives in the `Auto` folder, and the `Auto` namespace in Lean.
