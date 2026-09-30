@@ -6,6 +6,7 @@ Authors: Claude
 module
 
 public import DiscreteSW.Auto.Sec6ErrorEstimate
+public import DiscreteSW.Defs
 
 /-!
 # The discrete Stein–Wainger maximal operator
@@ -1546,6 +1547,58 @@ theorem discrete_stein_wainger_lp {n d : ℕ} (hn : 1 ≤ n) (hd : 1 ≤ d)
     memLp_iff.2 (lt_of_le_of_lt hbound
       (ENNReal.mul_lt_top ENNReal.ofReal_lt_top hf.eLpNorm_lt_top)),
     hbound⟩
+
+open DiscreteSW in
+/-- The main theorem in the form stated in `DiscreteSW/Theorems.lean`, for the objects of
+`DiscreteSW/Defs.lean` (`IsHomogeneousCZKernel`, `discreteCarlesonSummand`, `discreteCarleson`),
+deduced from `discrete_stein_wainger_lp`. -/
+theorem discrete_carleson_stein_wainger {n d : ℕ} (hn : 1 ≤ n) (hd : 1 ≤ d) {K : ℝ^n → ℂ}
+    (hK : IsHomogeneousCZKernel K) {p : ℝ≥0∞} (hp : 1 < p) (hp' : p < ∞) :
+    ∃ C : ℝ, ∀ f : ℤ^n → ℂ, MemLp f p .count →
+      (∀ t x, Summable (discreteCarlesonSummand d K f x t)) ∧
+        eLpNorm (discreteCarleson d K f) p .count ≤ ENNReal.ofReal C * eLpNorm f p .count := by
+  obtain ⟨Ω, h₁, h₂, h₃, hKΩ⟩ := hK
+  have hΩ : IsSWProfile Ω := ⟨h₁, h₂, h₃⟩
+  have hKs : K = swKernel Ω := by
+    funext x
+    rw [hKΩ, swKernel]
+    split_ifs with h
+    · subst h; simp [zero_pow (by omega : n ≠ 0)]
+    · push_cast; rfl
+  have hterm : ∀ f x t y, discreteCarlesonSummand d K f x t y = swTerm n d Ω t f x y := by
+    intro f x t y
+    have hy : ((‖(toEucl y : ℝ^n)‖ : ℝ) : ℂ) ^ (2 * d) = ((radialPolyZ n d y : ℝ) : ℂ) := by
+      rw [← radialPoly_latEmbed, radialPoly_eq_norm_pow]; push_cast; rfl
+    have he : (toEucl y : ℝ^n) = latEmbed y := rfl
+    rw [discreteCarlesonSummand, swTerm, eC, hKs, hy, he]
+    push_cast; ring_nf
+  have hp1 : 1 < p.toReal := by
+    have := ENNReal.toReal_strict_mono hp'.ne hp
+    simpa using this
+  have hpe : p = ENNReal.ofReal p.toReal := (ENNReal.ofReal_toReal hp'.ne).symm
+  obtain ⟨C, -, hC⟩ := discrete_stein_wainger_lp hn hd hΩ hp1
+  refine ⟨C, fun f hf => ?_⟩
+  rw [hpe] at hf ⊢
+  obtain ⟨-, hbdd, -, hbound⟩ := hC f hf
+  have hlat0 : latEmbed (0 : Fin n → ℤ) = 0 := by ext i; simp
+  have hsum : ∀ t x, ∑' y, discreteCarlesonSummand d K f x t y = swOp n d Ω t f x := by
+    intro t x
+    simp_rw [hterm, swOp]
+    refine (tsum_subtype_eq_of_support_subset (s := {y | y ≠ 0}) ?_).symm
+    intro y hy h
+    exact hy (by subst h; simp [swTerm, hlat0, swKernel])
+  have hmax : ∀ x, discreteCarleson d K f x = ENNReal.ofReal (swMax n d Ω f x) := by
+    intro x
+    simp_rw [discreteCarleson, hsum, swMax, ← ofReal_norm]
+    exact (Monotone.map_ciSup_of_continuousAt ENNReal.continuous_ofReal.continuousAt
+      ENNReal.ofReal_mono (hbdd x)).symm
+  refine ⟨fun t x => by
+    rw [show discreteCarlesonSummand d K f x t = swTerm n d Ω t f x from funext (hterm f x t)]
+    exact (summable_norm_swTerm hΩ hp1 hf t x).of_norm, ?_⟩
+  refine le_of_eq_of_le (eLpNorm_congr_enorm_ae AEStronglyMeasurable.of_discrete
+    AEStronglyMeasurable.of_discrete (ae_of_all _ fun x => ?_)) hbound
+  have h0 : 0 ≤ swMax n d Ω f x := Real.iSup_nonneg fun _ => norm_nonneg _
+  rw [hmax, enorm_eq_self, Real.enorm_eq_ofReal h0]
 
 end DiscreteSteinWainger
 
