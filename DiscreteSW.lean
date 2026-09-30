@@ -1,4 +1,6 @@
-import DiscreteSW.Theorems
+module
+
+public import DiscreteSW.Theorems
 
 #check discrete_carleson_stein_wainger
 #print axioms discrete_carleson_stein_wainger
