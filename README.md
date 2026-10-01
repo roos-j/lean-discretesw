@@ -10,6 +10,13 @@ a discrete maximal singular oscillatory operator (also called a discrete Carleso
   $\ell^p$ *bounds for* $p > 1$, J. Funct. Anal. **285** (2023), no. 10, Paper No. 110123.
   [doi:10.1016/j.jfa.2023.110123](https://doi.org/10.1016/j.jfa.2023.110123), [arXiv:2107.14616](https://arxiv.org/abs/2107.14616).
 
+### Palomar registration
+
+The formalization is registered in the Palomar Registry as
+[PALOMAR-2026-09-30-000034](https://palomar-registry.org/entry?id=PALOMAR-2026-09-30-000034).
+
+[Palomar](https://palomar-registry.org/about) is a public registry of Lean formalizations, each verified at a pinned commit by Lean's kernel and independent kernels, screened by an automated review of its statements and disclosures, and recorded with a durable identifier.
+
 ### Autoformalization
 
 First a blueprint was generated consolidating the arguments in both papers to prove
