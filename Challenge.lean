@@ -9,13 +9,17 @@ module
 public import Mathlib
 
 /-!
-# Discrete Carleson operators of Stein-Wainger type: `ℓ^p` bounds for `p > 1`
+# Discrete Carleson operators of Stein-Wainger type: $\ell^p$ bounds for $p > 1$
 
 This is the statement surface of the formalization. It states one result,
 `discrete_carleson_stein_wainger`: for $n, d \geq 1$, a homogeneous Calderon-Zygmund kernel
 $K$ on $\mathbb{R}^n$ and $1 < p < \infty$, the maximal operator
-$$\mathcal{C} f(x) = \sup_{t \in \mathbb{R}} \Big| \sum_{y \in \mathbb{Z}^n \setminus \{0\}}
-  e(t |y|^{2d}) K(y) f(x - y) \Big|, \qquad e(s) = e^{2 \pi i s},$$
+
+$$
+\mathcal{C} f(x) = \sup_{t \in \mathbb{R}} \Big| \sum_{y \in \mathbb{Z}^n \setminus \{0\}}
+  e(t |y|^{2d}) K(y) f(x - y) \Big|, \qquad e(s) = e^{2 \pi i s},
+$$
+
 is bounded on $\ell^p(\mathbb{Z}^n)$.
 
 Sources:
@@ -32,8 +36,8 @@ Sources:
   and its introduction defines the operator (1.1) and the class of homogeneous Calderon-Zygmund
   kernels used here.
 
-The definitions below are copied verbatim (as declarations, with expanded docstrings) from
-`DiscreteSW/Defs.lean`, and the theorem statement is copied verbatim from
+The definitions below, with their docstrings, are copied verbatim from
+`DiscreteSW/Defs.lean`, and the theorem statement and docstring are copied verbatim from
 `DiscreteSW/Theorems.lean`.
 
 Conventions and deviations from the papers:
@@ -59,29 +63,24 @@ namespace DiscreteSW
 open ENNReal MeasureTheory Complex Real
 open scoped ContDiff
 
-/-- The integer lattice $\mathbb{Z}^n$, as functions `Fin n → ℤ`. -/
+/-- The integer lattice `ℤⁿ`. -/
 scoped notation "ℤ^" n:max => Fin n → ℤ
 
-/-- The Euclidean space $\mathbb{R}^n$. -/
+@[inherit_doc EuclideanSpace]
 scoped notation "ℝ^" n:max => EuclideanSpace ℝ (Fin n)
 
 variable {n : ℕ}
 
-/-- The inclusion $\mathbb{Z}^n \to \mathbb{R}^n$, $y \mapsto (y_1, \ldots, y_n)$, registered
-below as a coercion. -/
+/-- Coercion from `ℤ^n` to `ℝ^n` -/
 @[coe] def toEucl (y : ℤ^n) : ℝ^n := WithLp.toLp 2 (y ·)
 
 scoped instance : Coe (ℤ^n) (ℝ^n) := ⟨toEucl⟩
 
-/-- $K : \mathbb{R}^n \to \mathbb{C}$ is a homogeneous Calderon-Zygmund kernel: there is
-$\Omega : \mathbb{R}^n \to \mathbb{C}$ that is smooth ($C^\infty$) on
-$\mathbb{R}^n \setminus \{0\}$, homogeneous of degree zero
-($\Omega(t x) = \Omega(x)$ for $x \neq 0$ and $t > 0$), and has integral zero over the unit
-sphere $S^{n-1}$ with respect to surface measure, such that $K(x) = \Omega(x) / |x|^n$ for all
-$x$.
+/-- The notion of homogeneous CZ kernels from arXiv:1907.00405.
 
-**Implementation note:** since the identity is also required at $x = 0$, Lean's convention
-$a / 0 = 0$ forces $K(0) = 0$ when $n \geq 1$. -/
+**Implementation note:** In line with Mathlib's junk value conventions
+this definition forces the junk value `K 0 = 0` when `n ≥ 1`.
+-/
 def IsHomogeneousCZKernel (K : ℝ^n → ℂ) : Prop :=
   ∃ Ω : ℝ^n → ℂ,
     ContDiffOn ℝ ∞ Ω {0}ᶜ ∧
@@ -89,19 +88,15 @@ def IsHomogeneousCZKernel (K : ℝ^n → ℂ) : Prop :=
     ∫ θ : Metric.sphere (0 : ℝ^n) 1, Ω θ ∂volume.toSphere = 0 ∧
     ∀ x, K x = Ω x / ‖x‖ ^ n
 
-/-- The summand $e(t |y|^{2d}) K(y) f(x - y)$ of the discrete Carleson operator, where
-$e(s) = e^{2 \pi i s}$ and $|y|$ is the Euclidean norm of $y \in \mathbb{Z}^n$. -/
+/-- Summand in the discrete Carleson operator -/
 def discreteCarlesonSummand (d : ℕ) (K : ℝ^n → ℂ) (f : ℤ^n → ℂ) (x : ℤ^n) (t : ℝ) (y : ℤ^n) : ℂ :=
   cexp (2 * π * I * t * ‖(y : ℝ^n)‖ ^ (2 * d)) * K y * f (x - y)
 
-/-- The discrete Carleson operator of Stein-Wainger type,
-$$\mathcal{C} f(x) = \sup_{t \in \mathbb{R}} \Big| \sum_{y \in \mathbb{Z}^n}
-  e(t |y|^{2d}) K(y) f(x - y) \Big| \in [0, \infty], \qquad x \in \mathbb{Z}^n,$$
-with the sum taken as Mathlib's unconditional sum `tsum` of `discreteCarlesonSummand`.
+/-- The discrete Carleson operator of Stein-Wainger type as defined in arXiv:1907.00405.
 
-**Implementation note:** the sum runs over all $y \in \mathbb{Z}^n$. When $K$ is a homogeneous
-Calderon-Zygmund kernel and $n \geq 1$, the term $y = 0$ vanishes because $K(0) = 0$, so this is
-the operator (1.1) of both source papers, whose sum runs over $y \neq 0$. -/
+**Implementation note:** We let the sum extend over all `y : ℤ^n` with the understanding
+that the summand takes the junk value `0` at `0` if `K` is a homogeneous CZ kernel and `n ≥ 1`.
+-/
 def discreteCarleson (d : ℕ) (K : ℝ^n → ℂ) (f : ℤ^n → ℂ) (x : ℤ^n) : ℝ≥0∞ :=
   ⨆ t : ℝ, ‖∑' y, discreteCarlesonSummand d K f x t y‖ₑ
 
@@ -116,11 +111,13 @@ open ENNReal MeasureTheory
 
 variable {n d : ℕ}
 
-/-- Let $n, d \geq 1$, let $K$ be a homogeneous Calderon-Zygmund kernel on $\mathbb{R}^n$, and
-let $1 < p < \infty$. Then there is a real constant $C$ such that for every
-$f \in \ell^p(\mathbb{Z}^n)$ the series $\sum_{y \in \mathbb{Z}^n} e(t |y|^{2d}) K(y) f(x - y)$
-is summable for all $t \in \mathbb{R}$ and $x \in \mathbb{Z}^n$, and
-$$\| \mathcal{C} f \|_{\ell^p(\mathbb{Z}^n)} \leq C \, \| f \|_{\ell^p(\mathbb{Z}^n)}.$$ -/
+/-- Theorem 1 of arXiv:2107.14616: The discrete Carleson operator of Stein-Wainger type
+is bounded on `ℓ^p` for all `1 < p < ∞`.
+
+**Implementation note:** The discrete Carleson operator is implemented using
+Mathlib's infinite sums which are defined to be zero when the summand is not summable.
+Thus, we have included the assertion that the summand is summable for all parameter values.
+-/
 theorem discrete_carleson_stein_wainger (hn : 1 ≤ n) (hd : 1 ≤ d) {K : ℝ^n → ℂ}
     (hK : IsHomogeneousCZKernel K) {p : ℝ≥0∞} (hp : 1 < p) (hp' : p < ∞) :
     ∃ C : ℝ, ∀ f : ℤ^n → ℂ, MemLp f p .count →
